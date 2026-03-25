@@ -1,0 +1,113 @@
+export interface InvestorProfile {
+  goals: string;
+  mustHaves: string;
+  superpowers: string;
+}
+
+export interface DealFile {
+  name: string;
+  mimeType: string;
+  data: string; // Base64 string
+}
+
+export interface DealOpportunity {
+  listingUrl: string;
+  askingPrice: number;
+  revenue: number;
+  sde: number; // Seller Discretionary Earnings
+  keywords: string;
+  notes: string;
+  growthContext: string; // New field for Socials, Ads, Growth ideas
+  imageUrl?: string; // URL of the listing image
+  files: DealFile[];
+  hasFinancials?: boolean; // Indicates if files were uploaded for analysis
+  callParticipants?: string;
+  callSummary?: string;
+}
+
+export interface AnalysisResult {
+  markdown: string;
+  groundingUrls: Array<{ title: string; uri: string }>;
+  score?: number; // Current/Final Score (0-100)
+  initialScore?: number; // Stage 1 Score (before financials)
+}
+
+export interface CalculatedMetrics {
+  multiple: number | null;
+  margin: number | null;
+  status: 'SUSPICIOUS' | 'MARKET' | 'PREMIUM' | 'UNKNOWN';
+}
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+  timestamp: number;
+}
+
+// --- NEW TYPES FOR AUTH & CACHING ---
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture?: string; // URL to avatar
+  googleId?: string;
+  accessToken?: string; // OAuth Access Token for Drive API
+  profile?: InvestorProfile; // Persisted investor profile
+}
+
+// Represents a global cache entry (shared knowledge base to save tokens)
+export interface CachedDealEntry {
+  id: string;
+  url: string;
+  dealData: Partial<DealOpportunity>; // Extracted metrics
+  analysis: AnalysisResult;
+  metrics: CalculatedMetrics;
+  lastUpdated: number; // Timestamp
+}
+
+export type DealStatus = 'Lead' | 'Engaged' | 'Offer Made' | 'LOI Sent' | 'Due Diligence' | 'Accepted' | 'Rejected';
+
+export interface CrmData {
+  status: DealStatus;
+  financialsRequested: boolean;
+  ndaSigned: boolean;
+  pofSent: boolean;
+  cimReceived: boolean;
+  brokerCall: boolean;
+  sellerCall: boolean;
+  offerMade: boolean;
+  loiSent: boolean;
+  dueDiligence: boolean;
+}
+
+// Represents a user's specific saved reference
+export interface SavedDealReference {
+  id: string;
+  userId: string;
+  dealCacheId: string; // References the global cache
+  savedAt: number;
+  personalNotes?: string;
+  crm?: CrmData;
+}
+
+export interface PopulatedSavedDeal extends SavedDealReference {
+  cache: CachedDealEntry;
+}
+
+// Data structure for the JSON file stored in Drive
+export interface DriveDataFile {
+  lastModified: number;
+  profile: InvestorProfile;
+  savedDeals: SavedDealReference[];
+  cache?: CachedDealEntry[]; // Synced cache entries for the saved deals
+}
+
+declare global {
+  interface Window {
+    aistudio?: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}

@@ -1,0 +1,280 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { DriveDataFile, InvestorProfile, User } from '../types';
+import { authService, dataService } from '../services/storageService';
+import { googleDriveService } from '../services/googleDriveService';
+
+interface AuthContextType {
+  user: User | null;
+  login: () => void; // Trigger Google Auth
+  logout: () => void;
+  updateUserProfile: (profile: InvestorProfile) => Promise<void>;
+  syncData: () => Promise<void>; // Manually trigger sync
+  isLoading: boolean;
+  isSyncing: boolean;
+  syncError: string | null;
+  isGoogleReady: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [isGoogleReady, setIsGoogleReady] = useState(true);
+
+  // 1. Initialize Local Auth State
+  useEffect(() => {
+    const initAuth = () => {
+      const savedUser = authService.getCurrentUser();
+      if (savedUser) {
+        setUser(savedUser);
+        dataService.syncAllDealsToAdmin(savedUser.id);
+      }
+      setIsLoading(false);
+    };
+    initAuth();
+  }, []);
+
+  // 2. Define Token Callback (Memoized)
+  const handleTokenResponse = useCallback(async (tokens: any) => {
+    if (tokens.error) {
+      console.error("Google Auth Error:", tokens);
+      setSyncError(`Auth Error: ${tokens.error}`);
+      return;
+    }
+    
+    const accessToken = tokens.access_token;
+    
+    try {
+      setIsLoading(true);
+      // Fetch User Profile Info from Google
+      const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      
+      if (!userInfoRes.ok) throw new Error("Failed to fetch user profile");
+      
+      const userInfo = await userInfoRes.json();
+
+      const newUser: User = {
+        id: userInfo.sub,
+        email: userInfo.email,
+        name: userInfo.name,
+        picture: userInfo.picture,
+        googleId: userInfo.sub,
+        accessToken: accessToken,
+        profile: undefined // Will load from drive
+      };
+
+      // Update Local Storage
+      localStorage.setItem('ds_current_user', JSON.stringify(newUser));
+      setUser(newUser);
+      
+      // Trigger Drive Sync (Load)
+      await loadFromDrive(newUser);
+
+    } catch (err) {
+      console.error("Failed to process login", err);
+      setSyncError("Login failed during profile fetch.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // 3. Listen for OAuth success message from popup
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+        return;
+      }
+      
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        handleTokenResponse(event.data.tokens);
+      } else if (event.data?.type === 'OAUTH_AUTH_ERROR') {
+        setSyncError(`Sign-in failed: ${event.data.error}`);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [handleTokenResponse]);
+
+  const loadFromDrive = async (currentUser: User) => {
+    if (!currentUser.accessToken) return;
+
+    setIsSyncing(true);
+    setSyncError(null);
+
+    try {
+      const fileId = await googleDriveService.findFile(currentUser.accessToken);
+      
+      if (fileId) {
+        const cloudData = await googleDriveService.readFile(currentUser.accessToken, fileId);
+        console.log("Cloud Data Loaded:", cloudData);
+
+        // Merge Profile
+        if (cloudData.profile) {
+          const updatedUser = { ...currentUser, profile: cloudData.profile };
+          authService.updateUserProfile(currentUser.id, cloudData.profile);
+          setUser(updatedUser);
+        }
+
+        // Merge Deals (Simple Union based on ID)
+        if (cloudData.savedDeals && cloudData.savedDeals.length > 0) {
+           const savesRaw = localStorage.getItem('ds_user_saves');
+           const localSaves: any[] = savesRaw ? JSON.parse(savesRaw) : [];
+           
+           const newSaves = [...localSaves];
+           cloudData.savedDeals.forEach(cloudSave => {
+               if (!newSaves.find(ls => ls.id === cloudSave.id)) {
+                   newSaves.push(cloudSave);
+               }
+           });
+           
+           localStorage.setItem('ds_user_saves', JSON.stringify(newSaves));
+        }
+
+        // Merge Cache
+        if (cloudData.cache && cloudData.cache.length > 0) {
+            dataService.mergeCache(cloudData.cache);
+        }
+        
+        // Sync all loaded deals to the Admin Dashboard backend
+        dataService.syncAllDealsToAdmin(currentUser.id);
+      } else {
+        console.log("No existing data file found. Waiting for first save.");
+      }
+    } catch (err: any) {
+      console.error("Sync Load Error:", err);
+      if (err.message && err.message.includes('Drive API is not enabled')) {
+          setSyncError("Google Drive API is not enabled in your Google Cloud Console.");
+      } else if (err.message && err.message.includes('Insufficient permissions')) {
+          setSyncError("Permission denied. Please log out, log back in, and check the box to grant Google Drive access.");
+      } else if (err.message && (err.message.includes('401') || err.message.includes('403'))) {
+          setSyncError("Session Expired: Please login again.");
+          // We do not logout automatically to preserve local work, but we mark sync as failed
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const saveToDrive = async (currentUser: User) => {
+    if (!currentUser.accessToken) return;
+
+    setIsSyncing(true);
+    setSyncError(null);
+
+    try {
+      const savesRaw = localStorage.getItem('ds_user_saves');
+      const savedDeals = savesRaw ? JSON.parse(savesRaw).filter((s: any) => s.userId === currentUser.id) : [];
+      
+      const cacheIds = savedDeals.map((s: any) => s.dealCacheId);
+      const cacheEntries = dataService.getCacheEntries(cacheIds);
+
+      const payload: DriveDataFile = {
+        lastModified: Date.now(),
+        profile: currentUser.profile || { goals: '', mustHaves: '', superpowers: '' },
+        savedDeals: savedDeals,
+        cache: cacheEntries
+      };
+
+      let fileId = await googleDriveService.findFile(currentUser.accessToken);
+      
+      if (!fileId) {
+        fileId = await googleDriveService.createFile(currentUser.accessToken, payload);
+      } else {
+        await googleDriveService.updateFile(currentUser.accessToken, fileId, payload);
+      }
+      
+      console.log("Data synced to Drive successfully.");
+    } catch (err: any) {
+      console.error("Sync Save Error:", err);
+      if (err.message && err.message.includes('Drive API is not enabled')) {
+         setSyncError("Google Drive API is not enabled in your Google Cloud Console.");
+      } else if (err.message && err.message.includes('Insufficient permissions')) {
+         setSyncError("Permission denied. Please log out, log back in, and check the box to grant Google Drive access.");
+      } else if (err.message && (err.message.includes('401') || err.message.includes('403'))) {
+         setSyncError("Session Expired: Please login again to save.");
+      } else {
+         setSyncError("Failed to save to Cloud.");
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const login = async () => {
+    try {
+      const redirectUri = `${window.location.origin}/api/auth/google/callback`;
+      const response = await fetch(`/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}`);
+      if (!response.ok) {
+        throw new Error('Failed to get auth URL');
+      }
+      const { url } = await response.json();
+
+      const authWindow = window.open(
+        url,
+        'oauth_popup',
+        'width=600,height=700'
+      );
+
+      if (!authWindow) {
+        setSyncError('Please allow popups for this site to connect your account.');
+      }
+    } catch (error) {
+      console.error('OAuth error:', error);
+      setSyncError('Failed to initialize Google Sign-In.');
+    }
+  };
+
+  const logout = () => {
+    authService.logout();
+    setUser(null);
+  };
+
+  const updateUserProfile = async (profile: InvestorProfile) => {
+    if (user) {
+        authService.updateUserProfile(user.id, profile);
+        const updatedUser = { ...user, profile };
+        setUser(updatedUser);
+        
+        if (user.accessToken) {
+            await saveToDrive(updatedUser);
+        }
+    }
+  };
+
+  const syncData = async () => {
+      if (user && user.accessToken) {
+          await saveToDrive(user);
+      }
+  };
+
+  return (
+    <AuthContext.Provider value={{ 
+        user, 
+        login, 
+        logout, 
+        updateUserProfile, 
+        syncData,
+        isLoading, 
+        isSyncing,
+        syncError,
+        isGoogleReady
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
