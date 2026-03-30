@@ -680,7 +680,7 @@ const App: React.FC = () => {
           <div>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight flex items-baseline flex-wrap gap-x-3">
               <span>Acquisition <span className="italic text-amber-400">Edge</span></span>
-              <span className="text-sm md:text-lg text-slate-500 font-sans font-medium tracking-normal normal-case">by C4 Infinity</span>
+              <span className="text-sm md:text-lg text-slate-500 font-sans font-medium tracking-normal normal-case">by DealScout.it</span>
             </h1>
             <p className="text-slate-500 text-sm font-medium tracking-wide mt-1 italic">
               "The acquisition intelligence tool built for buyers who think above the crowd."

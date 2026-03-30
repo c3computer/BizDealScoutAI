@@ -274,7 +274,7 @@ export const OnboardingDeck: React.FC<OnboardingDeckProps> = ({ onComplete, init
             </div>
             <div>
               <h1 className="text-xl font-display font-bold text-white leading-tight">Acquisition <span className="italic text-amber-400">Edge</span></h1>
-              <p className="text-[10px] text-slate-400 tracking-wider">by C4 Infinity</p>
+              <p className="text-[10px] text-slate-400 tracking-wider">by DealScout.it</p>
             </div>
           </div>
         </div>

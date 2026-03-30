@@ -15,42 +15,42 @@ interface ResultViewerProps {
 // This renders the "Paper" version of the deal memo
 export const PrintDocument: React.FC<{ result: AnalysisResult; dealTitle?: string; deal?: DealOpportunity; showReferences?: boolean }> = ({ result, dealTitle, deal, showReferences }) => {
   return (
-    <div className="bg-white text-slate-900 font-sans p-10 max-w-[210mm] mx-auto">
-       {/* C4 Infinity Header */}
-       <div className="flex justify-between items-start border-b-2 border-cyan-500 pb-6 mb-8 gap-8">
+    <div className="bg-white text-[#0D0F12] font-sans p-10 max-w-[210mm] mx-auto">
+       {/* Acquisition Edge Header */}
+       <div className="flex justify-between items-start border-b border-[rgba(201,153,58,0.25)] pb-6 mb-8 gap-8">
             <div className="flex items-center space-x-4 flex-shrink-0">
                 <div className="flex flex-col leading-none">
-                    <div className="flex items-baseline space-x-1">
-                        <span className="text-4xl font-bold text-red-600 tracking-tighter">C4</span>
-                        <span className="text-4xl font-bold text-cyan-500 tracking-tight">Infinity</span>
+                    <div className="flex items-baseline font-display text-[42px] text-[#0D0F12] tracking-tight">
+                        <span>Acquisition</span>
+                        <em className="text-[#C9993A] italic ml-1">Edge</em>
                     </div>
-                    <span className="text-xs uppercase tracking-[0.25em] text-slate-500 mt-1 font-bold">Investment Memo</span>
+                    <span className="text-[10px] uppercase tracking-[0.22em] text-[#8A9BB5] mt-2 font-mono">Investment Memo</span>
                 </div>
             </div>
             <div className="text-right flex-1 pt-2 flex flex-col items-end">
                 <div className="flex justify-end items-center mb-2">
                    {result.initialScore !== undefined && result.score !== undefined ? (
-                     <div className="flex items-center mr-4 bg-slate-100 rounded-full px-4 py-2 border border-slate-200">
+                     <div className="flex items-center mr-4 bg-[#F8F5EF] rounded-full px-4 py-2 border border-[rgba(13,15,18,0.08)]">
                         <div className="flex flex-col items-center mr-3 opacity-60">
-                            <span className="text-sm font-bold strike-through decoration-slate-400">{result.initialScore}</span>
-                            <span className="text-[8px] uppercase">Stage 1</span>
+                            <span className="text-sm font-bold line-through decoration-[#8A9BB5]">{result.initialScore}</span>
+                            <span className="text-[8px] uppercase font-mono tracking-widest">Stage 1</span>
                         </div>
-                        <span className="text-slate-400 mr-3">→</span>
+                        <span className="text-[#8A9BB5] mr-3">→</span>
                         <div className="flex flex-col items-center">
                             <span className="text-xl font-bold">{result.score}</span>
-                            <span className="text-[8px] uppercase text-cyan-700 font-bold">Stage 2</span>
+                            <span className="text-[8px] uppercase text-[#C9993A] font-bold font-mono tracking-widest">Stage 2</span>
                         </div>
                      </div>
                    ) : result.score !== undefined && (
-                     <div className="border-2 border-slate-900 rounded-full w-12 h-12 flex items-center justify-center mr-4">
+                     <div className="border border-[#0D0F12] rounded-full w-12 h-12 flex items-center justify-center mr-4">
                        <span className="text-xl font-bold">{result.score}</span>
                      </div>
                    )}
-                   <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-tight m-0 leading-tight font-display max-w-[400px]">
+                   <h1 className="text-2xl font-bold text-[#0D0F12] uppercase tracking-tight m-0 leading-tight font-display max-w-[400px]">
                       {dealTitle || 'Opportunity Analysis'}
                    </h1>
                 </div>
-                <p className="text-sm text-slate-500 uppercase tracking-wide mt-2 font-medium">
+                <p className="text-[10px] text-[#8A9BB5] uppercase tracking-[0.14em] mt-2 font-mono">
                     Generated: {new Date().toLocaleDateString()}
                 </p>
             </div>
@@ -58,49 +58,47 @@ export const PrintDocument: React.FC<{ result: AnalysisResult; dealTitle?: strin
 
         {/* Content Body - White Paper Styles */}
         <div className="
-            prose prose-slate max-w-none text-slate-700
-            prose-headings:font-sans prose-headings:font-bold prose-headings:uppercase prose-headings:tracking-wide
-            prose-h1:text-cyan-700 prose-h1:text-2xl prose-h1:mb-6 prose-h1:border-b prose-h1:border-cyan-100 prose-h1:pb-3 prose-h1:mt-8
-            prose-h2:text-cyan-700 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4
-            prose-h3:text-slate-900 prose-h3:font-bold prose-h3:mt-6
-            prose-p:leading-relaxed prose-p:mb-4 prose-p:text-justify prose-p:text-[15px]
-            prose-strong:text-slate-900 prose-strong:font-bold
+            prose prose-slate max-w-none text-[#0D0F12]
+            prose-headings:font-display prose-headings:uppercase prose-headings:tracking-wide
+            prose-h1:text-[#C9993A] prose-h1:text-2xl prose-h1:mb-6 prose-h1:border-b prose-h1:border-[rgba(201,153,58,0.25)] prose-h1:pb-3 prose-h1:mt-8
+            prose-h2:text-[#C9993A] prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4
+            prose-h3:text-[#0D0F12] prose-h3:font-bold prose-h3:mt-6
+            prose-p:leading-relaxed prose-p:mb-4 prose-p:text-justify prose-p:text-[15px] prose-p:font-sans
+            prose-strong:text-[#0D0F12] prose-strong:font-bold
             prose-ul:list-disc prose-ul:pl-5 prose-ul:my-4
-            prose-li:text-slate-700 prose-li:mb-2
+            prose-li:text-[#0D0F12] prose-li:mb-2 prose-li:font-sans
             
             /* Link Styles */
-            prose-a:text-cyan-600 prose-a:font-bold prose-a:no-underline hover:prose-a:underline
-
+            prose-a:text-[#C9993A] prose-a:font-bold prose-a:no-underline hover:prose-a:underline
+            
             /* Callout / Blockquote Styles */
-            prose-blockquote:bg-cyan-50 
-            prose-blockquote:border-l-[6px] 
-            prose-blockquote:border-cyan-500 
-            prose-blockquote:text-slate-800 
-            prose-blockquote:py-6 
-            prose-blockquote:px-8 
-            prose-blockquote:rounded-r-lg 
+            prose-blockquote:bg-[#F8F5EF] 
+            prose-blockquote:border-l-[4px] 
+            prose-blockquote:border-[#C9993A] 
+            prose-blockquote:text-[#0D0F12] 
+            prose-blockquote:py-4 
+            prose-blockquote:px-6 
             prose-blockquote:not-italic 
-            prose-blockquote:my-10 
-            prose-blockquote:shadow-sm
+            prose-blockquote:my-8 
             
             /* Table Styles */
-            prose-table:w-full prose-table:border-collapse prose-table:my-8 prose-table:text-sm prose-table:border prose-table:border-slate-200
-            prose-th:bg-cyan-50 prose-th:text-cyan-900 prose-th:font-bold prose-th:uppercase prose-th:text-xs prose-th:tracking-wider prose-th:p-4 prose-th:border prose-th:border-slate-300
-            prose-td:p-3 prose-td:border prose-td:border-slate-200 prose-td:text-slate-700
-            prose-tr:nth-child(even):bg-slate-50
+            prose-table:w-full prose-table:border-collapse prose-table:my-8 prose-table:text-sm prose-table:border prose-table:border-[rgba(13,15,18,0.08)]
+            prose-th:bg-[#F8F5EF] prose-th:text-[#0D0F12] prose-th:font-bold prose-th:uppercase prose-th:text-xs prose-th:tracking-wider prose-th:p-4 prose-th:border prose-th:border-[rgba(13,15,18,0.08)] prose-th:font-mono
+            prose-td:p-3 prose-td:border prose-td:border-[rgba(13,15,18,0.08)] prose-td:text-[#0D0F12]
+            prose-tr:nth-child(even):bg-[#F8F5EF]
         ">
             <ReactMarkdown>{result.markdown}</ReactMarkdown>
         </div>
 
         {/* References Section */}
         {deal && showReferences && (
-          <div className="mt-12 pt-8 border-t border-slate-200">
-            <h3 className="text-slate-900 font-bold uppercase tracking-wide mb-4">References & Citations</h3>
-            <div className="space-y-3 text-sm text-slate-700">
+          <div className="mt-12 pt-8 border-t border-[rgba(201,153,58,0.25)]">
+            <h3 className="text-[#0D0F12] font-display uppercase tracking-wide mb-4">References & Citations</h3>
+            <div className="space-y-3 text-sm text-[#0D0F12] font-sans">
               {deal.listingUrl && (
                 <p>
                   <span className="font-bold">Listing URL:</span>{' '}
-                  <a href={deal.listingUrl} target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:underline break-all">
+                  <a href={deal.listingUrl} target="_blank" rel="noopener noreferrer" className="text-[#C9993A] hover:underline break-all">
                     {deal.listingUrl}
                   </a>
                 </p>
@@ -114,7 +112,7 @@ export const PrintDocument: React.FC<{ result: AnalysisResult; dealTitle?: strin
                     ))}
                   </ul>
                 ) : (
-                  <span className="italic">Only the listing was used to make the deal scoring memorandum.</span>
+                  <span className="italic text-[#8A9BB5]">Only the listing was used to make the deal scoring memorandum.</span>
                 )}
               </div>
             </div>
@@ -122,9 +120,9 @@ export const PrintDocument: React.FC<{ result: AnalysisResult; dealTitle?: strin
         )}
 
         {/* Footer */}
-        <div className="mt-20 border-t border-slate-200 pt-8 flex justify-between items-center text-[10px] text-slate-400 uppercase tracking-widest">
+        <div className="mt-20 border-t border-[rgba(201,153,58,0.25)] pt-8 flex justify-between items-center text-[9px] text-[#8A9BB5] uppercase tracking-[0.14em] font-mono">
             <span>Confidential • Internal Circulation Only</span>
-            <span>Powered by Acquisition Edge & C4 Infinity Framework</span>
+            <span>Powered by Acquisition Edge & DealScout.it</span>
         </div>
     </div>
   );
@@ -152,21 +150,22 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({ result, loading, loa
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${dealTitle || 'Deal Memo'} | C4 Infinity</title>
+          <title>${dealTitle || 'Deal Memo'} | Acquisition Edge</title>
           <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
           <script>
             tailwind.config = {
                 theme: {
                     extend: {
                         fontFamily: {
-                            sans: ['Inter', 'sans-serif'],
-                            display: ['Oswald', 'sans-serif'],
+                            sans: ['"DM Sans"', 'sans-serif'],
+                            display: ['"DM Serif Display"', 'serif'],
+                            mono: ['"Space Mono"', 'monospace'],
                         }
                     }
                 }
             }
           </script>
-          <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
           <style>
             body { background: white; margin: 0; padding: 0; }
             /* Center the document in the window for preview */

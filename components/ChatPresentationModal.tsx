@@ -30,7 +30,7 @@ export const ChatPresentationModal: React.FC<ChatPresentationModalProps> = ({ is
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Chat Presentation | C4 Infinity</title>
+          <title>Chat Presentation | Acquisition Edge</title>
           <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
           <script>
             tailwind.config = {

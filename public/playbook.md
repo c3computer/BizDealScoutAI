@@ -1,4 +1,4 @@
-# 🏢 C4 Infinity LLC: Acquisition SOP & Playbook (V2)
+# 🏢 Acquisition Edge: Acquisition SOP & Playbook (V2)
 
 ## 🎯 The "Buy Box" (Core Criteria)
 *   **Financials:** Minimum $1M Annual Revenue | Minimum $300K SDE/EBITDA.
