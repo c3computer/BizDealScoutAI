@@ -197,7 +197,7 @@ function injectAutoFillIcon() {
       if (firstInput && firstInput.parentElement) {
         const btn = document.createElement('div');
         btn.className = 'dealscout-autofill-btn';
-        btn.innerHTML = `
+        btn.innerHTML = \`
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="10" rx="2"></rect>
             <circle cx="12" cy="5" r="2"></circle>
@@ -205,8 +205,8 @@ function injectAutoFillIcon() {
             <line x1="8" y1="16" x2="8" y2="16"></line>
             <line x1="16" y1="16" x2="16" y2="16"></line>
           </svg>
-        `;
-        btn.style.cssText = `
+        \`;
+        btn.style.cssText = \`
           position: absolute;
           right: 8px;
           top: 50%;
@@ -224,7 +224,7 @@ function injectAutoFillIcon() {
           width: 24px;
           height: 24px;
           transition: all 0.2s ease;
-        `;
+        \`;
         btn.title = 'Auto-Fill with DealScout';
         
         btn.addEventListener('mouseover', () => {
@@ -251,11 +251,11 @@ function injectAutoFillIcon() {
             
             // Visual feedback
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = `
+            btn.innerHTML = \`
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-            `;
+            \`;
             setTimeout(() => {
               btn.innerHTML = originalHtml;
             }, 2000);

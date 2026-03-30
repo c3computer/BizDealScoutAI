@@ -6,6 +6,7 @@
   "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": [
     "https://*.bizbuysell.com/*",
+    "https://*.bizquest.com/*",
     "http://localhost:3000/*",
     "https://*.run.app/*"
   ],
@@ -23,7 +24,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*.bizbuysell.com/*"],
+      "matches": ["https://*.bizbuysell.com/*", "https://*.bizquest.com/*"],
       "js": ["content.js"]
     }
   ]
