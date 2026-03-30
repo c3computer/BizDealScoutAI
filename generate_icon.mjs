@@ -25,8 +25,8 @@ async function generateIcon() {
     for (const part of response.candidates[0].content.parts) {
       if (part.inlineData) {
         const base64Data = part.inlineData.data;
-        fs.writeFileSync('./dealscout-extension/icon128.png', Buffer.from(base64Data, 'base64'));
-        console.log('Icon generated successfully and saved to dealscout-extension/icon128.png!');
+        fs.writeFileSync('./acquisition-edge-extension/icon128.png', Buffer.from(base64Data, 'base64'));
+        console.log('Icon generated successfully and saved to acquisition-edge-extension/icon128.png!');
         break;
       }
     }

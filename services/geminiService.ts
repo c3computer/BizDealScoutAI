@@ -134,7 +134,7 @@ export const analyzeDeal = async (
 
   // Construct Text Prompt
   const promptText = `
-    You are a DealScout AI, a contrarian private equity analyst.
+    You are Acquisition Edge, a contrarian private equity analyst.
     
     INVESTOR PROFILE:
     - Goals: ${profile.goals}
@@ -310,7 +310,7 @@ export const queryDealChat = async (
     USER QUESTION: ${newMessage}
     
     INSTRUCTIONS:
-    You are an expert Deal Consultant (DealScout Chat). 
+    You are an expert Deal Consultant (Acquisition Edge Chat). 
     Answer the user's question specifically about THIS deal using the provided metrics, notes, files, and analysis.
     Be concise, helpful, and reference specific numbers from the documents if possible.
   `;
@@ -326,6 +326,76 @@ export const queryDealChat = async (
   } catch (error) {
     console.error("Chat Error", error);
     throw new Error("Chat failed to respond.");
+  }
+};
+
+export const generateChatPresentation = async (
+  history: ChatMessage[],
+  context: {
+    deal: DealOpportunity,
+    analysis: AnalysisResult | null
+  }
+): Promise<string> => {
+  let apiKey = process.env.GEMINI_API_KEY || '';
+  const ai = new GoogleGenAI({ apiKey });
+  const parts: any[] = [];
+
+  // 1. Attach Files for Context
+  if (context.deal.files && context.deal.files.length > 0) {
+    context.deal.files.forEach(file => {
+      if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json' || file.mimeType.includes('csv')) {
+           const textContent = decodeBase64ToText(file.data);
+           if (textContent) {
+               parts.push({ text: `[Document: ${file.name}]\n${textContent}` });
+           }
+      } else {
+          parts.push({
+            inlineData: {
+              mimeType: file.mimeType,
+              data: file.data
+            }
+          });
+      }
+    });
+  }
+
+  // 2. Build Context String
+  const contextString = `
+    SYSTEM CONTEXT (DEAL DATA):
+    - Business: ${context.deal.keywords}
+    - Revenue: $${context.deal.revenue}
+    - SDE: $${context.deal.sde}
+    - Asking: $${context.deal.askingPrice}
+    - Notes: ${context.deal.notes}
+    
+    ${context.analysis ? `PRIOR ANALYSIS (MEMORANDUM): \n ${context.analysis.markdown}` : ''}
+
+    CHAT HISTORY:
+    ${history.map(m => `${m.role.toUpperCase()}: ${m.text}`).join('\n')}
+    
+    INSTRUCTIONS:
+    You are an expert Deal Consultant. Based on the Chat History and the Deal Data, generate a "Chat Presentation" in Markdown format.
+    This presentation should act like a Deal Memorandum PDF but specifically focus on the insights, score changes, and relevant AI Chat box-specific changes recommended during the Deal Chat AI conversation.
+    
+    Be sure to highlight:
+    1. Key takeaways from the chat conversation.
+    2. Any recommended changes to the deal score based on the chat.
+    3. Specific actionable recommendations or changes discussed in the chat.
+    
+    Format the output as a professional, easy-to-read Markdown document with clear headings, bullet points, and bold text for emphasis.
+  `;
+  
+  parts.push({ text: contextString });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: ANALYSIS_MODEL,
+      contents: { parts },
+    });
+    return response.text || "I couldn't generate a presentation.";
+  } catch (error) {
+    console.error("Presentation Generation Error", error);
+    throw new Error("Failed to generate presentation.");
   }
 };
 

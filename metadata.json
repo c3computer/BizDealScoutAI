@@ -1,5 +1,5 @@
 {
-  "name": "DealScout AI | Contrarian Analyzer 2026",
+  "name": "Acquisition Edge | Contrarian Analyzer",
   "description": "A business acquisition analysis tool utilizing the Contrarian Thinking framework. It evaluates deals against investor profiles using Gemini 3 Pro and live market data.",
   "requestFramePermissions": []
 }

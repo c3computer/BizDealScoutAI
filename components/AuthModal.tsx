@@ -81,7 +81,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </button>
                 
                 <p className="text-[10px] text-slate-500 text-center mt-4 px-4 leading-relaxed">
-                    By signing in, you grant DealScout permission to create and manage a specific configuration file in your Google Drive. We do not access your other files.
+                    By signing in, you grant Acquisition Edge permission to create and manage a specific configuration file in your Google Drive. We do not access your other files.
                 </p>
                 <p className="text-[10px] text-amber-500/50 text-center mt-1">
                   Origin: {window.location.origin}

@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DealScout AI | Contrarian Analyzer</title>
+    <title>Acquisition Edge | Contrarian Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script>
       window.process = window.process || { env: {} };
       window.process.env = window.process.env || {};
@@ -14,22 +14,38 @@
           extend: {
             colors: {
               slate: {
-                850: '#152033',
-                900: '#0f172a',
-                950: '#020617',
+                300: '#F8F5EF', // Mapping old text colors to new white
+                400: '#8A9BB5', // Scout Slate
+                500: '#8A9BB5',
+                600: 'rgba(201,153,58,0.25)', // Rule
+                700: '#252933', // ink3
+                800: '#1A1D24', // Vault (ink2)
+                850: '#1A1D24',
+                900: '#0D0F12', // Obsidian (ink)
+                950: '#0D0F12',
               },
               amber: {
-                400: '#fbbf24', // Gold
-                500: '#f59e0b',
+                300: '#E8C06A', // gold-light
+                400: '#C9993A', // Signal Gold
+                500: '#C9993A',
               },
               cyan: {
-                500: '#06b6d4',
-                600: '#0891b2',
+                300: '#E8C06A', // Mapping cyan to gold-light
+                400: '#C9993A', // Mapping cyan to gold
+                500: '#C9993A',
+                600: '#C9993A',
+              },
+              emerald: {
+                400: '#C9993A', // Mapping emerald to gold
+                500: '#C9993A',
+                600: '#C9993A',
+                900: '#1A1D24',
               }
             },
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              display: ['Oswald', 'sans-serif'],
+              sans: ['"DM Sans"', 'sans-serif'],
+              display: ['"DM Serif Display"', 'serif'],
+              mono: ['"Space Mono"', 'monospace'],
             }
           }
         }
@@ -37,8 +53,8 @@
     </script>
     <style>
       body {
-        background-color: #0f172a;
-        color: #e2e8f0;
+        background-color: #0D0F12;
+        color: #F8F5EF;
       }
       /* Custom scrollbar for dark theme */
       ::-webkit-scrollbar {
@@ -46,14 +62,14 @@
         height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #1e293b; 
+        background: #1A1D24; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #475569; 
+        background: #252933; 
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #fbbf24; 
+        background: #C9993A; 
       }
 
       /* Print Styles for High Quality PDF */

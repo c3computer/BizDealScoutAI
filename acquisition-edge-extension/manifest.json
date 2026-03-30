@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Acquisition Edge",
+  "version": "1.0",
+  "description": "Acquisition Edge companion extension for scraping deals and managing pipeline.",
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": [
+    "https://*.bizbuysell.com/*",
+    "http://localhost:3000/*",
+    "https://*.run.app/*"
+  ],
+  "icons": {
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "128": "icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.bizbuysell.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { extractDealMetrics, analyzeDeal, generateGrowthStrategy, queryDealChat } from './services/geminiService';
+import { extractDealMetrics, analyzeDeal, generateGrowthStrategy, queryDealChat, generateChatPresentation } from './services/geminiService';
+import { ChatPresentationModal } from './components/ChatPresentationModal';
+import { CreateLOIBox } from './components/CreateLOIBox';
+import { EmailModal } from './components/EmailModal';
 import { dataService, defaultCrm } from './services/storageService';
 import { 
   DealOpportunity, 
@@ -88,6 +91,10 @@ const App: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [chatPresentationLoading, setChatPresentationLoading] = useState(false);
+  const [chatPresentationModalOpen, setChatPresentationModalOpen] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [chatPresentationResult, setChatPresentationResult] = useState<AnalysisResult | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   
   // Profile File Input Ref
@@ -308,6 +315,53 @@ const App: React.FC = () => {
         setError(err instanceof Error ? err.message : 'An unexpected error occurred during growth analysis');
     } finally {
         setGrowthLoading(false);
+    }
+  };
+
+  const handleDownloadChat = () => {
+    if (chatMessages.length === 0) return;
+    
+    let chatText = `Acquisition Edge Chat Log - ${deal.keywords || 'Business Opportunity'}\n`;
+    chatText += `Generated: ${new Date().toLocaleString()}\n\n`;
+    
+    chatMessages.forEach(msg => {
+      const role = msg.role === 'user' ? 'You' : 'Acquisition Edge';
+      const time = new Date(msg.timestamp).toLocaleTimeString();
+      chatText += `[${time}] ${role}:\n${msg.text}\n\n`;
+    });
+    
+    const blob = new Blob([chatText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `deal-chat-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCreateChatPresentation = async () => {
+    if (chatMessages.length === 0) return;
+    
+    setChatPresentationLoading(true);
+    try {
+      const markdown = await generateChatPresentation(chatMessages, {
+        deal,
+        analysis: result
+      });
+      
+      setChatPresentationResult({
+        markdown,
+        groundingUrls: [],
+        score: result?.score,
+        initialScore: result?.initialScore
+      });
+      setChatPresentationModalOpen(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred generating the presentation');
+    } finally {
+      setChatPresentationLoading(false);
     }
   };
 
@@ -544,6 +598,24 @@ const App: React.FC = () => {
       {/* Auth Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       
+      {/* Chat Presentation Modal */}
+      <ChatPresentationModal 
+        isOpen={chatPresentationModalOpen} 
+        onClose={() => setChatPresentationModalOpen(false)} 
+        result={chatPresentationResult}
+        dealTitle={deal.keywords || 'Business Opportunity'}
+        deal={deal}
+      />
+      
+      {/* Email Modal */}
+      <EmailModal 
+        isOpen={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        defaultEmail={user?.email || ''}
+        dealTitle={deal.keywords || 'Business Opportunity'}
+        dealBody={result?.markdown || ''}
+      />
+      
       {/* Onboarding Deck */}
       {showOnboarding && (
         <OnboardingDeck 
@@ -598,14 +670,22 @@ const App: React.FC = () => {
 
       {/* Header */}
       <header className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-6">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-white uppercase tracking-tight flex items-baseline flex-wrap gap-x-3">
-            <span>DealScout <span className="text-amber-400">AI</span></span>
-            <span className="text-sm md:text-lg text-slate-500 font-sans font-medium tracking-normal normal-case">by C4 Infinity</span>
-          </h1>
-          <p className="text-slate-500 text-sm font-medium tracking-wide mt-1">
-            Contrarian Business Analyzer (Main Street Millionaire Edition)
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="flex-shrink-0">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 4L4 36H14L20 24L26 36H36L20 4Z" fill="currentColor" className="text-amber-400"/>
+              <path d="M20 16L12 32H28L20 16Z" fill="currentColor" className="text-slate-900"/>
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight flex items-baseline flex-wrap gap-x-3">
+              <span>Acquisition <span className="italic text-amber-400">Edge</span></span>
+              <span className="text-sm md:text-lg text-slate-500 font-sans font-medium tracking-normal normal-case">by C4 Infinity</span>
+            </h1>
+            <p className="text-slate-500 text-sm font-medium tracking-wide mt-1 italic">
+              "The acquisition intelligence tool built for buyers who think above the crowd."
+            </p>
+          </div>
         </div>
         
         <div className="flex items-center space-x-4 mt-4 md:mt-0">
@@ -954,7 +1034,7 @@ const App: React.FC = () => {
                     <svg className="w-5 h-5 mr-2 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                     </svg>
-                    Deal Chat AI
+                    Acquisition Edge Chat
                  </h2>
                  <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-1 rounded uppercase tracking-wider">
                      Documents Active
@@ -1016,8 +1096,33 @@ const App: React.FC = () => {
                          </svg>
                      </button>
                  </form>
+                 <div className="mt-3 flex justify-between items-center">
+                     <button
+                        onClick={handleDownloadChat}
+                        disabled={chatMessages.length === 0}
+                        className="text-xs flex items-center space-x-1 text-slate-400 hover:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                     >
+                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                         </svg>
+                         <span>Export Chat Log</span>
+                     </button>
+                     <button
+                        onClick={handleCreateChatPresentation}
+                        disabled={chatMessages.length === 0 || chatPresentationLoading}
+                        className="text-xs flex items-center space-x-1 text-cyan-400 hover:text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                     >
+                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                         </svg>
+                         <span>{chatPresentationLoading ? 'Generating Presentation...' : 'Create Chat Presentation'}</span>
+                     </button>
+                 </div>
              </div>
           </div>
+
+          {/* Card 4: Create LOI & Send to Broker */}
+          <CreateLOIBox />
 
         </div>
 
@@ -1044,6 +1149,17 @@ const App: React.FC = () => {
                         }`}
                      >
                        {saveSuccess ? 'Saved!' : user ? 'Save to History' : 'Login to Save'}
+                     </button>
+                   )}
+                   {result && (
+                     <button
+                        onClick={() => setEmailModalOpen(true)}
+                        className="text-xs uppercase font-bold tracking-wider px-3 py-1 rounded transition-colors border bg-slate-900 border-slate-600 text-slate-300 hover:border-amber-400 hover:text-amber-400 flex items-center"
+                     >
+                       <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                       </svg>
+                       Email
                      </button>
                    )}
                    {result && (

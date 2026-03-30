@@ -12,7 +12,7 @@
 ---
 
 ## ⏱️ Daily Schedule (The 2-Hour Time Block)
-*   **Block 1 (30 Mins):** Sourcing & AI Triage (DealScout AI)
+*   **Block 1 (30 Mins):** Sourcing & AI Triage (Acquisition Edge)
 *   **Block 2 (45 Mins):** Broker/Seller Outreach & Follow-ups
 *   **Block 3 (45 Mins):** Deal Structuring, Legal Coordination & Capital Partner Comms
 
@@ -20,15 +20,15 @@
 
 ## 📋 Phase 1: Sourcing & AI Triage (30 Mins/Day)
 1.  **Automated Filters:** Review daily email alerts from BizBuySell, BizQuest, and BizScout for target geographies and financials.
-2.  **DealScout AI Evaluation:**
-    *   Input the listing URL into DealScout AI.
+2.  **Acquisition Edge Evaluation:**
+    *   Input the listing URL into Acquisition Edge.
     *   **Score < 50:** Immediate Pass. Delete and move on.
     *   **Score 50+:** Move to Phase 2. Add to your CRM as a "Lead" and initiate outreach to request financials.
 
 ## 📋 Phase 2: Outreach & Positioning (45 Mins/Day)
 1.  **The Initial Message:** Send a standardized inquiry highlighting your 20+ years of retail/ops experience, your private capital backing, and your goal of preserving their legacy.
 2.  **NDA & Document Request:** Sign the NDA immediately. Request the CIM, Trailing 3 Years P&L, and Tax Returns.
-3.  **AI Financial Deep Dive:** Once financials are received, upload the PDFs into DealScout AI.
+3.  **AI Financial Deep Dive:** Once financials are received, upload the PDFs into Acquisition Edge.
     *   *Prompt:* "Analyze this P&L. Identify the top 3 operational risks, customer concentration issues, and verify if the $300K SDE is accurate or inflated by add-backs."
 
 ## 📋 Phase 3: Negotiation & Legal Coordination (45 Mins/Day)
@@ -43,7 +43,7 @@
 2.  **Operator Sourcing (The #2 Strategy):**
     *   *Primary Strategy:* During DD, ask the seller: *"Who runs the shop when you go on vacation?"* Identify the #2 employee (Manager, Lead Tech, Head Baker). Evaluate them for a promotion to GM/Operator.
     *   *Secondary Strategy:* If the #2 is not capable or doesn't exist, immediately begin interviewing external operators in the Atlanta/Miami area.
-3.  **Capital Partner Pitch:** If PML/PMP capital is needed for the down payment, package the DealScout AI report and the Operator plan into a deck.
+3.  **Capital Partner Pitch:** If PML/PMP capital is needed for the down payment, package the Acquisition Edge report and the Operator plan into a deck.
 
 ## 📋 Phase 5: Transition & Operations (Post-Close)
 1.  **The 1-2 Week Sprint:** You are Full-Time on-site (Atlanta or Miami) for the first 7-14 days.
@@ -68,7 +68,7 @@ Prepaid legal is a massive asset for a 2-hour/day schedule, but they operate bes
 ### 3. The "Skill Acquisition" Mindset for Deals 1 & 2
 Since your first two deals are about building the muscle memory of M&A:
 *   **Prioritize Downside Protection over Maximum Upside.** A deal with a 65 AI score that offers 90% seller financing with no personal guarantee is better for your first deal than an 85 AI score deal that requires you to drain your liquidity and sign a personal guarantee.
-*   **Use the AI as your "Bad Cop":** When negotiating, use the DealScout AI reports to justify lower offers. *"Mr. Seller, my analysis software flagged a high customer concentration risk and declining margins over the last 12 months. Because of that risk, I can only offer X down."*
+*   **Use the AI as your "Bad Cop":** When negotiating, use the Acquisition Edge reports to justify lower offers. *"Mr. Seller, my analysis software flagged a high customer concentration risk and declining margins over the last 12 months. Because of that risk, I can only offer X down."*
 
 ### 4. Direct-to-Seller Outreach (The "Blue Ocean")
 To avoid the competitive bloodbath of BizBuySell:

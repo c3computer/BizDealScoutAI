@@ -153,7 +153,7 @@ export const googleDriveService = {
    */
   uploadDealDocument: async (accessToken: string, file: File, dealName: string): Promise<{ id: string, webViewLink: string }> => {
      const metadata = {
-        name: `[DealScout] ${dealName} - ${file.name}`,
+        name: `[Acquisition Edge] ${dealName} - ${file.name}`,
         mimeType: file.type,
      };
 
