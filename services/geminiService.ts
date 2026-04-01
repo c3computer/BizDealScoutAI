@@ -8,7 +8,24 @@ const ANALYSIS_MODEL = 'gemini-3.1-pro-preview'; // Used for complex reasoning (
 const createFriendlyError = (error: any, context: string): Error => {
   console.error(`Error in ${context}:`, error);
   let msg = "An unexpected error occurred.";
-  if (error instanceof Error) msg = error.message;
+  
+  if (error instanceof Error) {
+    msg = error.message;
+  } else if (typeof error === 'string') {
+    msg = error;
+  } else if (error && typeof error === 'object') {
+    try {
+      msg = JSON.stringify(error);
+    } catch (e) {
+      msg = "Unknown error object.";
+    }
+  }
+
+  // Check for 413 Payload Too Large
+  if (msg.includes('413') && msg.includes('Too Large')) {
+    return new Error(`Failed to ${context}: The documents you attached are too large for the AI to process. Please remove some files or use smaller files (under 5MB each).`);
+  }
+
   return new Error(`Failed to ${context}: ${msg}`);
 };
 
@@ -65,6 +82,7 @@ export const extractDealMetrics = async (url: string): Promise<Partial<DealOppor
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json",
       },
     });
 
@@ -78,7 +96,14 @@ export const extractDealMetrics = async (url: string): Promise<Partial<DealOppor
     const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
     const jsonString = jsonMatch ? jsonMatch[0] : cleanText;
 
-    return JSON.parse(jsonString);
+    const parsed = JSON.parse(jsonString);
+    
+    // If everything is null/empty, it means we couldn't find any data
+    if (!parsed.askingPrice && !parsed.revenue && !parsed.sde && !parsed.keywords) {
+      throw new Error("No business data found for this URL.");
+    }
+
+    return parsed;
 
   } catch (error) {
     console.error("Import Error Details:", error);
@@ -101,6 +126,52 @@ const decodeBase64ToText = (base64: string): string => {
     }
 };
 
+// Helper to process a file into a Gemini Part
+const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> => {
+  // If it's a text-based file, decode it and send as text
+  if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json' || file.mimeType.includes('csv')) {
+    const textContent = decodeBase64ToText(file.data);
+    if (textContent) {
+      return { text: `[Document: ${file.name}]\n${textContent}` };
+    }
+  }
+
+  // For binary files, check size. If > 5MB (approx 6.5MB base64), use File API
+  // Base64 length * 0.75 gives approximate byte size
+  const byteSize = file.data.length * 0.75;
+  const UPLOAD_THRESHOLD = 5 * 1024 * 1024; // 5MB
+
+  if (byteSize > UPLOAD_THRESHOLD) {
+    try {
+      console.log(`File ${file.name} is large (${(byteSize/1024/1024).toFixed(2)}MB). Uploading via Gemini File API...`);
+      // Convert base64 back to Blob efficiently using fetch
+      const base64Response = await fetch(`data:${file.mimeType};base64,${file.data}`);
+      const blob = await base64Response.blob();
+      
+      const uploadRes = await ai.files.upload({ file: blob as any, mimeType: file.mimeType });
+      console.log(`Successfully uploaded ${file.name} to Gemini File API: ${uploadRes.uri}`);
+      
+      return {
+        fileData: {
+          fileUri: uploadRes.uri,
+          mimeType: file.mimeType
+        }
+      };
+    } catch (e) {
+      console.error(`Failed to upload ${file.name} to Gemini File API, falling back to inline data:`, e);
+      // Fallback to inline data if upload fails
+    }
+  }
+
+  // Default: send as inline data
+  return {
+    inlineData: {
+      mimeType: file.mimeType,
+      data: file.data
+    }
+  };
+};
+
 export const analyzeDeal = async (
   profile: InvestorProfile,
   deal: DealOpportunity,
@@ -112,24 +183,12 @@ export const analyzeDeal = async (
 
   // Add Files (Images/PDFs/Text)
   if (deal.files && deal.files.length > 0) {
-    deal.files.forEach(file => {
-        // Check if text based (CSV, JSON, TXT)
-        // Note: We explicitly set 'text/csv' for converted Excel files in FileUploader
-        if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json' || file.mimeType.includes('csv')) {
-             const textContent = decodeBase64ToText(file.data);
-             if (textContent) {
-                 parts.push({ text: `[Document: ${file.name}]\n${textContent}` });
-             }
-        } else {
-            // Images, PDFs, etc.
-            parts.push({
-                inlineData: {
-                    mimeType: file.mimeType,
-                    data: file.data
-                }
-            });
-        }
-    });
+    for (const file of deal.files) {
+      const part = await processFileToPart(ai, file);
+      if (part) {
+        parts.push(part);
+      }
+    }
   }
 
   // Construct Text Prompt
@@ -206,22 +265,23 @@ export const summarizeCall = async (
     Format the output as a clean, professional text summary.
   `;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
-    contents: {
-      parts: [
-        {
-          inlineData: {
-            mimeType: file.mimeType,
-            data: file.data
-          }
-        },
-        { text: prompt }
-      ]
-    }
-  });
+  try {
+    const filePart = await processFileToPart(ai, file);
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: {
+        parts: [
+          filePart,
+          { text: prompt }
+        ]
+      }
+    });
 
-  return response.text || "No summary generated.";
+    return response.text || "No summary generated.";
+  } catch (error) {
+    throw createFriendlyError(error, "Call Summary");
+  }
 };
 
 export const generateGrowthStrategy = async (
@@ -276,21 +336,12 @@ export const queryDealChat = async (
 
   // 1. Attach Files for Context (NotebookLLM Style)
   if (context.deal.files && context.deal.files.length > 0) {
-    context.deal.files.forEach(file => {
-      if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json' || file.mimeType.includes('csv')) {
-           const textContent = decodeBase64ToText(file.data);
-           if (textContent) {
-               parts.push({ text: `[Document: ${file.name}]\n${textContent}` });
-           }
-      } else {
-          parts.push({
-            inlineData: {
-              mimeType: file.mimeType,
-              data: file.data
-            }
-          });
+    for (const file of context.deal.files) {
+      const part = await processFileToPart(ai, file);
+      if (part) {
+        parts.push(part);
       }
-    });
+    }
   }
 
   // 2. Build Context String
@@ -324,8 +375,7 @@ export const queryDealChat = async (
     });
     return response.text || "I couldn't generate a response.";
   } catch (error) {
-    console.error("Chat Error", error);
-    throw new Error("Chat failed to respond.");
+    throw createFriendlyError(error, "Chat Response");
   }
 };
 
@@ -342,21 +392,12 @@ export const generateChatPresentation = async (
 
   // 1. Attach Files for Context
   if (context.deal.files && context.deal.files.length > 0) {
-    context.deal.files.forEach(file => {
-      if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json' || file.mimeType.includes('csv')) {
-           const textContent = decodeBase64ToText(file.data);
-           if (textContent) {
-               parts.push({ text: `[Document: ${file.name}]\n${textContent}` });
-           }
-      } else {
-          parts.push({
-            inlineData: {
-              mimeType: file.mimeType,
-              data: file.data
-            }
-          });
+    for (const file of context.deal.files) {
+      const part = await processFileToPart(ai, file);
+      if (part) {
+        parts.push(part);
       }
-    });
+    }
   }
 
   // 2. Build Context String
@@ -394,8 +435,7 @@ export const generateChatPresentation = async (
     });
     return response.text || "I couldn't generate a presentation.";
   } catch (error) {
-    console.error("Presentation Generation Error", error);
-    throw new Error("Failed to generate presentation.");
+    throw createFriendlyError(error, "Chat Presentation Generation");
   }
 };
 

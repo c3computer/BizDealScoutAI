@@ -231,7 +231,7 @@ const App: React.FC = () => {
       }));
     } catch (err) {
       setError(
-        "Import partially blocked. We tried to find data from search snippets. TIP: Copy/Paste listing text into 'Notes'."
+        "Could not extract data from this URL. Make sure it's a valid business listing (like BizBuySell). TIP: You can also copy/paste the listing text directly into 'Notes'."
       );
     } finally {
       setImporting(false);
