@@ -164,7 +164,32 @@ export const CapitalRaisingBox: React.FC<CapitalRaisingBoxProps> = ({ profile, d
             </div>
           </form>
           
-          <div className="p-3 bg-slate-800 border-t border-slate-700 flex justify-center">
+          <div className="p-4 bg-slate-800 border-t border-slate-700 flex flex-col items-center space-y-4">
+            <button
+              onClick={async () => {
+                const proposalMessage = "Please provide a comprehensive Deal Structure Proposal.";
+                const userMsg: ChatMessage = { role: 'user', text: proposalMessage, timestamp: Date.now() };
+                setChatHistory(prev => [...prev, userMsg]);
+                setIsTyping(true);
+                try {
+                  const response = await queryCapitalRaisingChat(profile, deal, analysis, chatHistory, proposalMessage);
+                  const aiMsg: ChatMessage = { role: 'model', text: response, timestamp: Date.now() };
+                  setChatHistory(prev => [...prev, aiMsg]);
+                } catch (error: any) {
+                  const errorMsg: ChatMessage = { role: 'model', text: `Error: ${error.message}`, timestamp: Date.now() };
+                  setChatHistory(prev => [...prev, errorMsg]);
+                } finally {
+                  setIsTyping(false);
+                }
+              }}
+              disabled={isTyping}
+              className={`w-full max-w-md py-3 uppercase font-display font-bold tracking-widest text-slate-900 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 rounded
+                  ${isTyping ? 'bg-slate-600' : 'bg-green-400 hover:bg-green-300 shadow-[0_0_15px_rgba(74,222,128,0.3)]'}
+              `}
+            >
+              {isTyping ? 'Generating Proposal...' : 'Deal Structure Proposal'}
+            </button>
+
             <button
               onClick={() => setIsScriptModalOpen(true)}
               className="text-amber-400 hover:text-amber-300 text-sm font-medium flex items-center transition-colors"
