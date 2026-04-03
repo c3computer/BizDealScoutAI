@@ -349,7 +349,8 @@ export const queryCapitalRaisingChat = async (
   chatHistory: ChatMessage[],
   newMessage: string
 ): Promise<string> => {
-  const ai = getGeminiClient();
+  let apiKey = process.env.GEMINI_API_KEY || '';
+  const ai = new GoogleGenAI({ apiKey });
   const parts: any[] = [];
 
   // 1. Attach Files for Context
