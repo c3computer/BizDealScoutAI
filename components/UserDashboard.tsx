@@ -76,6 +76,7 @@ export const UserDashboard: React.FC = () => {
 
   const [importingBatch, setImportingBatch] = useState(false);
   const [importProgress, setImportProgress] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchDeals = () => {
     if (user) {
@@ -188,6 +189,14 @@ export const UserDashboard: React.FC = () => {
     return <span className="ml-1 text-cyan-400">{sortDirection === 'desc' ? '↓' : '↑'}</span>;
   };
 
+  const filteredDeals = sortedDeals.filter(deal => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    const keywords = (deal.cache.dealData.keywords || '').toLowerCase();
+    const url = (deal.cache.url || '').toLowerCase();
+    return keywords.includes(query) || url.includes(query);
+  });
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-300 p-8">
       <div className="max-w-7xl mx-auto">
@@ -196,7 +205,21 @@ export const UserDashboard: React.FC = () => {
             <h1 className="text-3xl font-display font-bold text-white uppercase tracking-wider">My Dashboard</h1>
             <p className="text-slate-500 text-sm mt-1">View and manage your saved deals</p>
           </div>
-          <div className="flex space-x-3">
+          <div className="flex space-x-3 items-center">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search deals..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-slate-900 border border-slate-700 text-white text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-64 pl-10 p-2.5"
+              />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg className="w-4 h-4 text-slate-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                </svg>
+              </div>
+            </div>
             <button 
               onClick={handleImportBatch}
               disabled={importingBatch}
@@ -260,14 +283,14 @@ export const UserDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {sortedDeals.length === 0 ? (
+                {filteredDeals.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-slate-500">
-                      No deals saved yet.
+                      No deals found.
                     </td>
                   </tr>
                 ) : (
-                  sortedDeals.map((deal) => {
+                  filteredDeals.map((deal) => {
                     const score = deal.cache.analysis.score || 0;
                     const title = deal.cache.dealData.keywords || deal.cache.url.split('bizbuysell.com/')[1]?.split('/')[0]?.replace(/-/g, ' ') || 'Unknown Deal';
 
