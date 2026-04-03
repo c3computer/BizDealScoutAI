@@ -29,17 +29,17 @@ export const CapitalRaisingBox: React.FC<CapitalRaisingBoxProps> = ({ profile, d
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: inputMessage };
+    const userMessage: ChatMessage = { role: 'user', text: inputMessage, timestamp: Date.now() };
     setChatHistory(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsTyping(true);
 
     try {
       const response = await queryCapitalRaisingChat(profile, deal, analysis, chatHistory, inputMessage);
-      const aiMessage: ChatMessage = { role: 'model', content: response };
+      const aiMessage: ChatMessage = { role: 'model', text: response, timestamp: Date.now() };
       setChatHistory(prev => [...prev, aiMessage]);
     } catch (error: any) {
-      const errorMessage: ChatMessage = { role: 'model', content: `Error: ${error.message}` };
+      const errorMessage: ChatMessage = { role: 'model', text: `Error: ${error.message}`, timestamp: Date.now() };
       setChatHistory(prev => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
@@ -122,10 +122,10 @@ export const CapitalRaisingBox: React.FC<CapitalRaisingBoxProps> = ({ profile, d
                 <div className={`max-w-[85%] rounded-lg p-3 text-sm ${msg.role === 'user' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-200 border border-slate-700'}`}>
                   {msg.role === 'model' ? (
                     <div className="prose prose-invert prose-sm max-w-none">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <ReactMarkdown>{msg.text}</ReactMarkdown>
                     </div>
                   ) : (
-                    msg.content
+                    msg.text
                   )}
                 </div>
               </div>

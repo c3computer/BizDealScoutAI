@@ -363,6 +363,9 @@ export const queryCapitalRaisingChat = async (
     }
   }
 
+  // Create a copy of deal without files to avoid sending huge base64 strings in text
+  const { files, ...dealWithoutFiles } = deal;
+
   // 2. Build Context String
   const contextString = `
 You are an expert Private Money and Creative Finance Strategist, heavily influenced by the methods of Codie Sanchez (boring businesses, acquisition fees, OPM, equity splits) and Pace Morby (creative finance, SubTo, seller finance, Gator lending, PMLs).
@@ -377,13 +380,13 @@ INVESTOR PROFILE:
 ${JSON.stringify(profile, null, 2)}
 
 DEAL DETAILS:
-${JSON.stringify(deal, null, 2)}
+${JSON.stringify(dealWithoutFiles, null, 2)}
 
 PREVIOUS ANALYSIS:
 ${analysis ? JSON.stringify(analysis, null, 2) : 'No analysis available yet.'}
 
 CHAT HISTORY:
-${chatHistory.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n')}
+${chatHistory.map(msg => `${msg.role.toUpperCase()}: ${msg.text}`).join('\n')}
 
 USER MESSAGE:
 ${newMessage}
@@ -396,10 +399,7 @@ Provide a strategic, actionable response focusing on how to structure the capita
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-pro-preview',
-      contents: {
-        role: 'user',
-        parts: parts
-      }
+      contents: { parts },
     });
 
     return response.text || "I couldn't generate a response. Please try again.";
