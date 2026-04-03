@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { AnalysisResult, ChatMessage, DealOpportunity, InvestorProfile, DealFile } from "../types";
+import mammoth from 'mammoth';
 
 const MODEL_ID = 'gemini-3-flash-preview'; // Used for extraction with search
 const ANALYSIS_MODEL = 'gemini-3.1-pro-preview'; // Used for complex reasoning (MAX mode)
@@ -128,6 +129,25 @@ const decodeBase64ToText = (base64: string): string => {
 
 // Helper to process a file into a Gemini Part
 const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> => {
+  // Handle .docx files using mammoth
+  if (file.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx')) {
+    try {
+      const binaryString = atob(file.data);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
+      if (result.value) {
+        return { text: `[Document: ${file.name}]\n${result.value}` };
+      }
+    } catch (e) {
+      console.error(`Failed to extract text from docx file ${file.name}:`, e);
+      // If extraction fails, we might still try to send it, but it will likely fail.
+    }
+  }
+
   // If it's a text-based file, decode it and send as text
   if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json' || file.mimeType.includes('csv')) {
     const textContent = decodeBase64ToText(file.data);
@@ -322,12 +342,77 @@ export const generateGrowthStrategy = async (
     }
 };
 
+export const queryCapitalRaisingChat = async (
+  profile: InvestorProfile,
+  deal: DealOpportunity,
+  analysis: DealAnalysis | null,
+  chatHistory: ChatMessage[],
+  newMessage: string
+): Promise<string> => {
+  const ai = getGeminiClient();
+  const parts: any[] = [];
+
+  // 1. Attach Files for Context
+  if (deal.files && deal.files.length > 0) {
+    for (const file of deal.files) {
+      const part = await processFileToPart(ai, file);
+      if (part) {
+        parts.push(part);
+      }
+    }
+  }
+
+  // 2. Build Context String
+  const contextString = `
+You are an expert Private Money and Creative Finance Strategist, heavily influenced by the methods of Codie Sanchez (boring businesses, acquisition fees, OPM, equity splits) and Pace Morby (creative finance, SubTo, seller finance, Gator lending, PMLs).
+
+Your goal is to help the user structure a deal to raise private capital based on the seller's offer and terms. You must break down the deal terms and profitability across 4 main stages:
+1. Acquisition (e.g., 2% acquisition fee charged at deal inception, Gator lending for EMD)
+2. Monthly Profit (The spread or equity split on monthly cash flow)
+3. Refinance before final sale (Paying off short-term PMLs or seller finance balloons using Commercial loans, SBA 7a, DSCR, etc.)
+4. Exit Planning / Sale (Final equity payout, capital gains, selling the asset)
+
+INVESTOR PROFILE:
+${JSON.stringify(profile, null, 2)}
+
+DEAL DETAILS:
+${JSON.stringify(deal, null, 2)}
+
+PREVIOUS ANALYSIS:
+${analysis ? JSON.stringify(analysis, null, 2) : 'No analysis available yet.'}
+
+CHAT HISTORY:
+${chatHistory.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n')}
+
+USER MESSAGE:
+${newMessage}
+
+Provide a strategic, actionable response focusing on how to structure the capital stack, what to offer private money lenders (PMLs), and how to maximize profitability across the 4 stages. Be specific about interest rates, equity splits, and timelines.
+`;
+
+  parts.push({ text: contextString });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: {
+        role: 'user',
+        parts: parts
+      }
+    });
+
+    return response.text || "I couldn't generate a response. Please try again.";
+  } catch (error) {
+    throw createFriendlyError(error, 'generate capital raising strategy');
+  }
+};
+
 export const queryDealChat = async (
   history: ChatMessage[],
   newMessage: string,
   context: {
     deal: DealOpportunity,
-    analysis: AnalysisResult | null
+    analysis: DealAnalysis | null
   }
 ): Promise<string> => {
   let apiKey = process.env.GEMINI_API_KEY || '';

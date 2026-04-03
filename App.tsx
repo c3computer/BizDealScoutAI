@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext';
 import { extractDealMetrics, analyzeDeal, generateGrowthStrategy, queryDealChat, generateChatPresentation } from './services/geminiService';
 import { ChatPresentationModal } from './components/ChatPresentationModal';
 import { CreateLOIBox } from './components/CreateLOIBox';
+import { CapitalRaisingBox } from './components/CapitalRaisingBox';
 import { EmailModal } from './components/EmailModal';
 import { dataService, defaultCrm } from './services/storageService';
 import { 
@@ -286,6 +287,15 @@ const App: React.FC = () => {
           margin: metrics.margin?.toString() || "N/A" 
         }
       );
+      
+      // Preserve the initial score if this is a stage 2 run
+      if (cached?.analysis?.score && forceFreshRun) {
+        response.initialScore = cached.analysis.score;
+      } else if (cached?.analysis?.initialScore) {
+        // Or keep the existing initial score if we re-run again
+        response.initialScore = cached.analysis.initialScore;
+      }
+
       setResult(response);
 
       if (deal.listingUrl) {
@@ -1123,6 +1133,9 @@ const App: React.FC = () => {
 
           {/* Card 4: Create LOI & Send to Broker */}
           <CreateLOIBox />
+
+          {/* Card 5: Capital Raising & Deal Terms */}
+          <CapitalRaisingBox profile={profile} deal={deal} analysis={result} />
 
         </div>
 
