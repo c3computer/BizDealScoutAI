@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { openSignService } from '../services/openSignService';
+import { LOITerms } from '../types';
 
 interface LOIData {
   logo?: string;
@@ -18,19 +19,31 @@ interface LOIWalkthroughModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialData: LOIData;
+  loiTerms: LOITerms | null;
 }
 
-export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen, onClose, initialData }) => {
+export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen, onClose, initialData, loiTerms }) => {
   const [step, setStep] = useState(1);
   const [buyerName, setBuyerName] = useState('');
   const [businessDescription, setBusinessDescription] = useState('');
-  const [purchasePrice, setPurchasePrice] = useState('');
-  const [earnestMoney, setEarnestMoney] = useState('');
-  const [dueDiligenceDays, setDueDiligenceDays] = useState('30');
-  const [closingDate, setClosingDate] = useState('');
-  const [trainingPeriod, setTrainingPeriod] = useState('14 days');
-  const [nonCompetePeriod, setNonCompetePeriod] = useState('2 years');
-  
+  const [purchasePrice, setPurchasePrice] = useState(loiTerms?.purchasePrice || '');
+  const [earnestMoney, setEarnestMoney] = useState(loiTerms?.earnestMoney || '');
+  const [dueDiligenceDays, setDueDiligenceDays] = useState(loiTerms?.dueDiligenceDays || '30');
+  const [closingDate, setClosingDate] = useState(loiTerms?.closingDate || '');
+  const [trainingPeriod, setTrainingPeriod] = useState(loiTerms?.trainingPeriod || '14 days');
+  const [nonCompetePeriod, setNonCompetePeriod] = useState(loiTerms?.nonCompetePeriod || '2 years');
+
+  useEffect(() => {
+    if (loiTerms) {
+      setPurchasePrice(loiTerms.purchasePrice || '');
+      setEarnestMoney(loiTerms.earnestMoney || '');
+      setDueDiligenceDays(loiTerms.dueDiligenceDays || '30');
+      setClosingDate(loiTerms.closingDate || '');
+      setTrainingPeriod(loiTerms.trainingPeriod || '14 days');
+      setNonCompetePeriod(loiTerms.nonCompetePeriod || '2 years');
+    }
+  }, [loiTerms]);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

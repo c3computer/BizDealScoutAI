@@ -10,6 +10,15 @@ export interface DealFile {
   data: string; // Base64 string
 }
 
+export interface LOITerms {
+  purchasePrice: string;
+  earnestMoney: string;
+  dueDiligenceDays: string;
+  closingDate: string;
+  trainingPeriod: string;
+  nonCompetePeriod: string;
+}
+
 export interface DealOpportunity {
   listingUrl: string;
   askingPrice: number;

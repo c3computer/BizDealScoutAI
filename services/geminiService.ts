@@ -450,6 +450,11 @@ export const queryDealChat = async (
     You are an expert Deal Consultant (Acquisition Edge Chat). 
     Answer the user's question specifically about THIS deal using the provided metrics, notes, files, and analysis.
     Be concise, helpful, and reference specific numbers from the documents if possible.
+    
+    CRITICAL OBJECTIVE: The major take-away of this chat is to create the Terms of the offer to present to the seller. 
+    Always aim to offer the best terms given the data uploaded and what the seller is asking. 
+    Utilize creative financing strategies for buying businesses taught by Codie Sanchez and Pace Morby (e.g., Seller Financing, Earn-outs, Subject-To, minimal money down, performance-based payouts).
+    When the user is ready, clearly outline the proposed terms (Purchase Price, Earnest Money, Due Diligence Period, Closing Date, Training Period, Non-Compete).
   `;
   
   parts.push({ text: contextString });
@@ -586,5 +591,44 @@ export const generatePersonalizedPlaybook = async (
   } catch (error) {
     console.error("Playbook Error", error);
     throw new Error("Failed to generate playbook.");
+  }
+};
+
+export const extractLOITerms = async (history: ChatMessage[]): Promise<any> => {
+  let apiKey = process.env.GEMINI_API_KEY || '';
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+    Analyze the following chat history between a user and an Acquisition Edge Deal Consultant.
+    Extract the finalized or most recently proposed terms for a Letter of Intent (LOI).
+    
+    CHAT HISTORY:
+    ${history.map(m => `${m.role.toUpperCase()}: ${m.text}`).join('\n')}
+    
+    Return ONLY a valid JSON object with the following keys (use empty strings if a value is not found):
+    {
+      "purchasePrice": "string (e.g., '1,500,000' or 'TBD')",
+      "earnestMoney": "string (e.g., '50,000' or 'TBD')",
+      "dueDiligenceDays": "string (e.g., '30' or '60')",
+      "closingDate": "string (e.g., '30 days after DD' or specific date)",
+      "trainingPeriod": "string (e.g., '14 days' or '3 months')",
+      "nonCompetePeriod": "string (e.g., '2 years' or '5 years')"
+    }
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: ANALYSIS_MODEL,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+    
+    const text = response.text || "{}";
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Error extracting LOI terms:", error);
+    throw new Error("Failed to extract LOI terms from chat.");
   }
 };

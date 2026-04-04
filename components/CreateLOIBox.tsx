@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { LOIWalkthroughModal } from './LOIWalkthroughModal';
+import { LOITerms } from '../types';
 
-export const CreateLOIBox: React.FC = () => {
+interface CreateLOIBoxProps {
+  loiTerms: LOITerms | null;
+}
+
+export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms }) => {
   const [logo, setLogo] = useState<string | undefined>(undefined);
   const [businessAddress, setBusinessAddress] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
@@ -27,6 +32,10 @@ export const CreateLOIBox: React.FC = () => {
 
   const handleStartWalkthrough = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!loiTerms) {
+      alert("Terms are not Set. Please set terms in the Acquisition Edge Chat first.");
+      return;
+    }
     setIsModalOpen(true);
   };
 
@@ -172,6 +181,7 @@ export const CreateLOIBox: React.FC = () => {
           brokerName,
           brokerEmail
         }}
+        loiTerms={loiTerms}
       />
     </div>
   );

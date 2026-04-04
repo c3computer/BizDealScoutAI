@@ -14,7 +14,8 @@ import {
   DealFile,
   CalculatedMetrics,
   ChatMessage,
-  CrmData
+  CrmData,
+  LOITerms
 } from './types';
 import { Input } from './components/Input';
 import { TextArea } from './components/TextArea';
@@ -96,6 +97,8 @@ const App: React.FC = () => {
   const [chatPresentationModalOpen, setChatPresentationModalOpen] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [chatPresentationResult, setChatPresentationResult] = useState<AnalysisResult | null>(null);
+  const [loiTerms, setLoiTerms] = useState<LOITerms | null>(null);
+  const [isExtractingTerms, setIsExtractingTerms] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   
   // Profile File Input Ref
@@ -372,6 +375,21 @@ const App: React.FC = () => {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred generating the presentation');
     } finally {
       setChatPresentationLoading(false);
+    }
+  };
+
+  const handleSaveLOITerms = async () => {
+    if (chatMessages.length === 0) return;
+    setIsExtractingTerms(true);
+    try {
+      const { extractLOITerms } = await import('./services/geminiService');
+      const terms = await extractLOITerms(chatMessages);
+      setLoiTerms(terms);
+      alert("Terms successfully saved for your LOI!");
+    } catch (err) {
+      alert("Failed to extract terms. Please make sure you've discussed terms in the chat.");
+    } finally {
+      setIsExtractingTerms(false);
     }
   };
 
@@ -1093,7 +1111,7 @@ const App: React.FC = () => {
                         type="text"
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
-                        placeholder="Ask about this deal..."
+                        placeholder="Ask about this deal...or create terms to offer the seller"
                         className="flex-1 bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
                      />
                      <button 
@@ -1117,22 +1135,34 @@ const App: React.FC = () => {
                          </svg>
                          <span>Export Chat Log</span>
                      </button>
-                     <button
-                        onClick={handleCreateChatPresentation}
-                        disabled={chatMessages.length === 0 || chatPresentationLoading}
-                        className="text-xs flex items-center space-x-1 text-cyan-400 hover:text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                     >
-                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                         </svg>
-                         <span>{chatPresentationLoading ? 'Generating Presentation...' : 'Create Chat Presentation'}</span>
-                     </button>
+                     <div className="flex space-x-4">
+                       <button
+                          onClick={handleSaveLOITerms}
+                          disabled={chatMessages.length === 0 || isExtractingTerms}
+                          className="text-xs flex items-center space-x-1 text-emerald-400 hover:text-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                       >
+                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                           </svg>
+                           <span>{isExtractingTerms ? 'Saving Terms...' : 'Save Terms for LOI'}</span>
+                       </button>
+                       <button
+                          onClick={handleCreateChatPresentation}
+                          disabled={chatMessages.length === 0 || chatPresentationLoading}
+                          className="text-xs flex items-center space-x-1 text-cyan-400 hover:text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                       >
+                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                           </svg>
+                           <span>{chatPresentationLoading ? 'Generating Presentation...' : 'Create Chat Presentation'}</span>
+                       </button>
+                     </div>
                  </div>
              </div>
           </div>
 
           {/* Card 4: Create LOI & Send to Broker */}
-          <CreateLOIBox />
+          <CreateLOIBox loiTerms={loiTerms} />
 
           {/* Card 5: Capital Raising & Deal Terms */}
           <CapitalRaisingBox profile={profile} deal={deal} analysis={result} />
