@@ -8,6 +8,8 @@ export interface DealFile {
   name: string;
   mimeType: string;
   data: string; // Base64 string
+  geminiFileUri?: string; // Cached URI from Gemini File API
+  extractedText?: string; // Cached text extraction
 }
 
 export interface LOITerms {

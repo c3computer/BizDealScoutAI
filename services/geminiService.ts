@@ -129,6 +129,19 @@ const decodeBase64ToText = (base64: string): string => {
 
 // Helper to process a file into a Gemini Part
 const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> => {
+  // Check cache first
+  if (file.extractedText) {
+    return { text: `[Document: ${file.name}]\n${file.extractedText}` };
+  }
+  if (file.geminiFileUri) {
+    return {
+      fileData: {
+        fileUri: file.geminiFileUri,
+        mimeType: file.mimeType
+      }
+    };
+  }
+
   // Handle .docx files using mammoth
   if (file.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx')) {
     try {
@@ -140,6 +153,7 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
       }
       const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
       if (result.value) {
+        file.extractedText = result.value; // Cache it
         return { text: `[Document: ${file.name}]\n${result.value}` };
       }
     } catch (e) {
@@ -152,44 +166,39 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
   if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json' || file.mimeType.includes('csv')) {
     const textContent = decodeBase64ToText(file.data);
     if (textContent) {
+      file.extractedText = textContent; // Cache it
       return { text: `[Document: ${file.name}]\n${textContent}` };
     }
   }
 
-  // For binary files, check size. If > 5MB (approx 6.5MB base64), use File API
-  // Base64 length * 0.75 gives approximate byte size
-  const byteSize = file.data.length * 0.75;
-  const UPLOAD_THRESHOLD = 5 * 1024 * 1024; // 5MB
-
-  if (byteSize > UPLOAD_THRESHOLD) {
-    try {
-      console.log(`File ${file.name} is large (${(byteSize/1024/1024).toFixed(2)}MB). Uploading via Gemini File API...`);
-      // Convert base64 back to Blob efficiently using fetch
-      const base64Response = await fetch(`data:${file.mimeType};base64,${file.data}`);
-      const blob = await base64Response.blob();
-      
-      const uploadRes = await ai.files.upload({ file: blob as any, mimeType: file.mimeType });
-      console.log(`Successfully uploaded ${file.name} to Gemini File API: ${uploadRes.uri}`);
-      
-      return {
-        fileData: {
-          fileUri: uploadRes.uri,
-          mimeType: file.mimeType
-        }
-      };
-    } catch (e) {
-      console.error(`Failed to upload ${file.name} to Gemini File API, falling back to inline data:`, e);
-      // Fallback to inline data if upload fails
-    }
+  // For all other files (PDF, images, etc.), upload to Gemini File API to cache the URI
+  // This prevents sending large base64 strings on every chat message
+  try {
+    console.log(`Uploading ${file.name} to Gemini File API for caching...`);
+    // Convert base64 back to Blob efficiently using fetch
+    const base64Response = await fetch(`data:${file.mimeType};base64,${file.data}`);
+    const blob = await base64Response.blob();
+    
+    const uploadRes = await ai.files.upload({ file: blob as any, mimeType: file.mimeType });
+    console.log(`Successfully uploaded ${file.name} to Gemini File API: ${uploadRes.uri}`);
+    
+    file.geminiFileUri = uploadRes.uri; // Cache it
+    return {
+      fileData: {
+        fileUri: uploadRes.uri,
+        mimeType: file.mimeType
+      }
+    };
+  } catch (e) {
+    console.error(`Failed to upload ${file.name} to Gemini File API, falling back to inline data:`, e);
+    // Fallback to inline data if upload fails
+    return {
+      inlineData: {
+        mimeType: file.mimeType,
+        data: file.data
+      }
+    };
   }
-
-  // Default: send as inline data
-  return {
-    inlineData: {
-      mimeType: file.mimeType,
-      data: file.data
-    }
-  };
 };
 
 export const analyzeDeal = async (
@@ -528,7 +537,7 @@ Provide a strategic, actionable response focusing on how to structure the capita
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: { parts },
     });
 
@@ -591,7 +600,7 @@ export const queryDealChat = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: ANALYSIS_MODEL,
+      model: 'gemini-3-flash-preview',
       contents: { parts },
     });
     return response.text || "I couldn't generate a response.";
@@ -748,7 +757,7 @@ export const extractLOITerms = async (history: ChatMessage[]): Promise<any> => {
 
   try {
     const response = await ai.models.generateContent({
-      model: ANALYSIS_MODEL,
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json"
