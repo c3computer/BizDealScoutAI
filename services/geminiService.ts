@@ -376,6 +376,136 @@ Your goal is to help the user structure a deal to raise private capital based on
 3. Refinance before final sale (Paying off short-term PMLs or seller finance balloons using Commercial loans, SBA 7a, DSCR, etc.)
 4. Exit Planning / Sale (Final equity payout, capital gains, selling the asset)
 
+Please add this methodology to your suggested structures: Tax Savings to get to a bigger downpayment
+# The Morby Method Applied to Business Acquisition
+
+This is a legitimate and powerful structure. Let me break down exactly what's happening mechanically, then show you the tax math you can put in front of the seller.
+
+---
+
+## The Core Mechanic: Refi Before Transfer
+
+The seller's instinct is to **sell** the business for $2M. The strategy is to reframe the transaction so that the **LLC borrows** $1M before the transfer, then the seller only "sells" $1M — not $2M. Since loan proceeds are not taxable income, the seller pockets the first $1M completely tax-free.
+
+---
+
+## Deal Structure Step-by-Step
+
+### What the Seller Originally Wanted:
+| Component | Amount | Terms |
+|---|---|---|
+| Down Payment | $1,000,000 | At close |
+| Seller Carry Note | $1,000,000 | 5 yrs @ 8% |
+| **Total** | **$2,000,000** | |
+
+---
+
+### The Reframed Structure:
+
+**Step 1 — The LLC Takes a Business Loan (Pre-Transfer)**
+- The bakery LLC applies for a **$1M business term loan** (against its assets, cash flow, and SDE)
+- An SDE of $1M/year makes this business highly bankable — most lenders will look at a 3–4x SDE multiple for collateral, so a $1M loan against a $2M+ asset is very serviceable
+- The **seller receives $1M in loan proceeds directly from the LLC** before ownership changes hands
+- This is a **distribution or management fee** from the LLC — **not a sale**, therefore **not a capital gains event**
+- The $1M is **received tax-free** (debt is not income)
+
+**Step 2 — Buyer Acquires the LLC Membership Interest**
+- Instead of selling the *assets* of the bakery, the seller transfers his **LLC membership interest** to you
+- The sale price for the membership interest is now **$1M** (not $2M — because the LLC just borrowed $1M and distributed it to the seller)
+- You, the buyer, now **own the LLC** — which means you now **own the loan obligation** as well
+- You make the loan payments from the business's cash flow
+
+**Step 3 — Seller Carries the Remaining $1M**
+- The seller holds a **$1M seller carry note** at 8% over 5 years
+- Monthly payment: approximately **$20,276/month**
+- This note is reported on the **installment sale method**, spreading his taxable gain over 5 years — not all in year one
+
+---
+
+## The Tax Comparison (This Is Your Pitch)
+
+Assume the seller's **original basis in the LLC is ~$200,000** (common for a bakery built over time — equipment, leasehold, etc.).
+
+### ❌ Traditional Sale (What He Thinks He Wants)
+
+| Item | Amount |
+|---|---|
+| Total Sale Price | $2,000,000 |
+| Adjusted Basis | ($200,000) |
+| **Taxable Capital Gain** | **$1,800,000** |
+| Federal Long-Term Cap Gains (20%) | $360,000 |
+| Net Investment Income Tax (3.8%) | $68,400 |
+| **Total Federal Tax Owed** | **$428,400** |
+| **Net In His Pocket** | **$1,571,600** |
+
+> Florida has no state income tax, so this is his full exposure — but this is still brutal.
+
+---
+
+### ✅ Morby Method Structure (What You're Offering)
+
+| Item | Amount |
+|---|---|
+| LLC Loan Proceeds Received (Tax-Free) | $1,000,000 |
+| Seller Carry Note (Installment Sale) | $1,000,000 |
+| **Adjusted Basis** | ($200,000) |
+| **Taxable Gain on the Installment Sale** | **$800,000** |
+| Federal Long-Term Cap Gains (20%) | $160,000 |
+| Net Investment Income Tax (3.8%) | $30,400 |
+| **Total Federal Tax Owed** | **$190,400** |
+| **Net In His Pocket** | **$1,809,600** |
+
+---
+
+## The Number That Closes the Conversation
+
+| | Traditional Sale | Morby Structure |
+|---|---|---|
+| Gross Proceeds | $2,000,000 | $2,000,000 |
+| Tax Paid | $428,400 | $190,400 |
+| **Net to Seller** | **$1,571,600** | **$1,809,600** |
+| **Difference** | | **+$238,000** |
+
+**You're not asking him to take less. You're showing him how to keep $238,000 more of what he already negotiated — while you get the same deal.**
+
+---
+
+## How the SDE Makes This Work for You
+
+With **$1M+ SDE** annually, here's your debt service reality check:
+
+| Obligation | Annual Payment |
+|---|---|
+| Business Loan ($1M, ~7%, 10yr) | ~$139,200/yr |
+| Seller Carry ($1M, 8%, 5yr) | ~$243,312/yr |
+| **Total Annual Debt Service** | **~$382,512/yr** |
+| SDE Available | $1,000,000+ |
+| **Cash Flow After Debt** | **~$617,488/yr** |
+
+Your **DSCR (Debt Service Coverage Ratio)** is approximately **2.6x** — extremely bankable and very comfortable.
+
+---
+
+## Important Structuring Notes to Protect Everyone
+
+There are a few things that need to be handled carefully with a CPA and business attorney:
+
+**Step Transaction Doctrine** — The IRS can collapse a refinance and a sale into one transaction if they're too close in time or appear coordinated. The refinance should have business justification independent of the sale (equipment purchase, working capital, etc.), and there should be a reasonable time buffer between the loan closing and the membership transfer.
+
+**The Loan Terms** — If you go SBA, be aware that SBA 7(a) loans have change-of-ownership provisions that require lender notification. A conventional business term loan or a private/hard money bridge may be cleaner for this structure.
+
+**Installment Sale Agreement** — The seller carry note needs to be properly documented with a promissory note, a personal guarantee from you, and ideally a UCC-1 filing against the LLC assets as collateral for the seller.
+
+**LLC Operating Agreement** — The membership interest transfer needs to be reflected in an amended operating agreement and any required state filings.
+
+---
+
+## The One-Liner to Open the Conversation
+
+> *"You told me you want $2M. I'm not asking you to take less. I'm showing you a structure where you walk away with $238,000 more than a traditional sale — and your accountant can verify every number before we sign anything."*
+
+That framing gets you past the ego of a seller who's anchored on his original terms, because you're not fighting his number — you're improving his outcome.
+
 INVESTOR PROFILE:
 ${JSON.stringify(profile, null, 2)}
 

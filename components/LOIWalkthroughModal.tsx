@@ -127,15 +127,15 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
       }
 
       const signers = [];
-      if (initialData.sellerName && initialData.sellerEmail) {
-        signers.push({ name: initialData.sellerName, email: initialData.sellerEmail });
-      }
       if (initialData.brokerName && initialData.brokerEmail) {
         signers.push({ name: initialData.brokerName, email: initialData.brokerEmail });
       }
+      if (initialData.sellerName && initialData.sellerEmail) {
+        signers.push({ name: initialData.sellerName, email: initialData.sellerEmail });
+      }
 
       if (signers.length === 0) {
-        setErrorMessage("No valid signers (Seller or Broker) provided with email addresses.");
+        setErrorMessage("No valid signers (Broker or Seller) provided with email addresses.");
         setIsGenerating(false);
         return;
       }
