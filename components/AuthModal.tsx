@@ -16,7 +16,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const CLIENT_CONFIGURED = true;
+  const CLIENT_CONFIGURED = !!(import.meta.env.VITE_GOOGLE_CLIENT_ID || (typeof process !== 'undefined' && process.env && process.env.GOOGLE_CLIENT_ID));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -61,7 +61,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 {!CLIENT_CONFIGURED && (
                     <div className="bg-red-900/20 border border-red-800 text-red-300 p-3 rounded text-xs text-center mb-4">
                         <strong>Configuration Missing:</strong> <br/>
-                        Please set <code>GOOGLE_CLIENT_ID</code> in <code>.env</code> or code to enable Google Login.
+                        Please set <code>VITE_GOOGLE_CLIENT_ID</code> in your Netlify Environment Variables.
                     </div>
                 )}
 

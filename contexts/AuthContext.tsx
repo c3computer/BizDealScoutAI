@@ -22,9 +22,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
-  const [isGoogleReady, setIsGoogleReady] = useState(true);
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
 
-  // 1. Initialize Local Auth State
+  // 1. Initialize Local Auth State & Check Google Script
   useEffect(() => {
     const initAuth = () => {
       const savedUser = authService.getCurrentUser();
@@ -35,6 +35,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     };
     initAuth();
+
+    // Check if Google Identity Services script is loaded
+    const checkGoogle = setInterval(() => {
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+        setIsGoogleReady(true);
+        clearInterval(checkGoogle);
+      }
+    }, 100);
+
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      clearInterval(checkGoogle);
+      if (!window.google || !window.google.accounts) {
+        console.warn("Google Identity Services script failed to load.");
+      }
+    }, 10000);
+
+    return () => clearInterval(checkGoogle);
   }, []);
 
   // 2. Define Token Callback (Memoized)
@@ -83,29 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // 3. Listen for OAuth success message from popup
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      const origin = event.origin || '';
-      console.log("Received message from origin:", origin, event.data);
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('127.0.0.1') && !origin.includes('dealscout.it.com')) {
-        console.warn("Origin not allowed:", origin);
-        return;
-      }
-      
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        console.log("OAuth success received");
-        handleTokenResponse(event.data.tokens);
-      } else if (event.data?.type === 'OAUTH_AUTH_ERROR') {
-        console.error("OAuth error received:", event.data.error);
-        setSyncError(`Sign-in failed: ${event.data.error}`);
-        setIsSyncing(false);
-      }
-    };
-    
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [handleTokenResponse]);
+  // 3. (Removed: GIS handles popup and callback directly)
 
   const loadFromDrive = async (currentUser: User) => {
     if (!currentUser.accessToken) return;
@@ -214,22 +210,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async () => {
     try {
-      const redirectUri = `${window.location.origin}/api/auth/google/callback`;
-      const response = await fetch(`/api/auth/google/url?redirect_uri=${encodeURIComponent(redirectUri)}`);
-      if (!response.ok) {
-        throw new Error('Failed to get auth URL');
+      // 1. Check if GIS is loaded
+      if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+        setSyncError('Google Identity Services script not loaded. Please refresh the page.');
+        return;
       }
-      const { url } = await response.json();
 
-      const authWindow = window.open(
-        url,
-        'oauth_popup',
-        'width=600,height=700'
-      );
-
-      if (!authWindow) {
-        setSyncError('Please allow popups for this site to connect your account.');
+      // 2. Get Client ID from environment variables
+      // We check VITE_GOOGLE_CLIENT_ID first (for Netlify), then fallback to process.env
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || (typeof process !== 'undefined' && process.env ? process.env.GOOGLE_CLIENT_ID : null);
+      
+      if (!clientId) {
+        setSyncError('Configuration Missing: Please set VITE_GOOGLE_CLIENT_ID in your Netlify Environment Variables.');
+        return;
       }
+
+      setSyncError(null);
+      
+      // 3. Initialize the Token Client
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets email profile openid',
+        callback: (response: any) => {
+          if (response.error) {
+            console.error('GIS Auth Error:', response);
+            setSyncError(`Sign-in failed: ${response.error_description || response.error}`);
+            setIsSyncing(false);
+            return;
+          }
+          // GIS returns access_token directly!
+          handleTokenResponse(response);
+        },
+      });
+
+      // 4. Request the token (opens popup)
+      client.requestAccessToken();
+
     } catch (error) {
       console.error('OAuth error:', error);
       setSyncError('Failed to initialize Google Sign-In.');
