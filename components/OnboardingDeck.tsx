@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { InvestorProfile } from '../types';
+import { VoiceOnboardingAgent } from './VoiceOnboardingAgent';
 
 interface OnboardingDeckProps {
   onComplete: (profile: InvestorProfile, playbookAnswers: Record<string, string>) => void;
@@ -43,6 +44,22 @@ export const OnboardingDeck: React.FC<OnboardingDeckProps> = ({ onComplete, init
 
   const handleSkip = () => {
     handleNext();
+  };
+
+  const handleUpdateAnswer = (stepId: string, answer: string) => {
+    if (stepId === 'goals' || stepId === 'mustHaves' || stepId === 'superpowers') {
+      setProfile(prev => ({ ...prev, [stepId]: answer }));
+    } else if (stepId === 'time') {
+      setPlaybookAnswers(prev => ({ ...prev, 'How much time can you dedicate to sourcing and diligence?': answer }));
+    } else if (stepId === 'financing') {
+      setPlaybookAnswers(prev => ({ ...prev, 'What is your preferred financing method?': answer }));
+    } else if (stepId === 'operations') {
+      setPlaybookAnswers(prev => ({ ...prev, 'What is your post-close operational strategy?': answer }));
+    } else if (stepId === 'sourcing') {
+      setPlaybookAnswers(prev => ({ ...prev, 'How do you plan to source deals?': answer }));
+    } else if (stepId === 'team') {
+      setPlaybookAnswers(prev => ({ ...prev, 'Do you have a deal team in place?': answer }));
+    }
   };
 
   const renderStepContent = () => {
@@ -382,6 +399,13 @@ export const OnboardingDeck: React.FC<OnboardingDeckProps> = ({ onComplete, init
             </div>
           </div>
         )}
+
+        {/* Voice Agent */}
+        <VoiceOnboardingAgent 
+          currentStepId={currentStep.id}
+          onUpdateAnswer={handleUpdateAnswer}
+          onNextStep={handleNext}
+        />
       </div>
     </div>
   );
