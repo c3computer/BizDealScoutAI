@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { InvestorProfile } from '../types';
-import { VoiceOnboardingAgent } from './VoiceOnboardingAgent';
 
 interface OnboardingDeckProps {
   onComplete: (profile: InvestorProfile, playbookAnswers: Record<string, string>) => void;
@@ -400,12 +399,6 @@ export const OnboardingDeck: React.FC<OnboardingDeckProps> = ({ onComplete, init
           </div>
         )}
 
-        {/* Voice Agent */}
-        <VoiceOnboardingAgent 
-          currentStepId={currentStep.id}
-          onUpdateAnswer={handleUpdateAnswer}
-          onNextStep={handleNext}
-        />
       </div>
     </div>
   );
