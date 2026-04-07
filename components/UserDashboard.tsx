@@ -4,6 +4,8 @@ import { dataService } from '../services/storageService';
 import { PopulatedSavedDeal } from '../types';
 import { analyzeDeal } from '../services/geminiService';
 
+import { Footer } from './Footer';
+
 export const UserDashboard: React.FC = () => {
   const { user } = useAuth();
   const [deals, setDeals] = useState<PopulatedSavedDeal[]>([]);
@@ -360,6 +362,7 @@ export const UserDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

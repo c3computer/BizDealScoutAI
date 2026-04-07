@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+import { Footer } from './Footer';
+
 interface AdminDeal {
   id: string;
   url: string;
@@ -329,6 +331,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { AdminDashboard } from './components/AdminDashboard';
 import { UserDashboard } from './components/UserDashboard';
+import { LegalPage } from './components/LegalPage';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -21,6 +22,10 @@ root.render(
     ) : path === '/dashboard' ? (
       <AuthProvider>
         <UserDashboard />
+      </AuthProvider>
+    ) : path === '/privacy' || path === '/terms' || path === '/legal' ? (
+      <AuthProvider>
+        <LegalPage />
       </AuthProvider>
     ) : (
       <AuthProvider>

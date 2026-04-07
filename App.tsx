@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { extractDealMetrics, analyzeDeal, generateGrowthStrategy, queryDealChat, generateChatPresentation } from './services/geminiService';
+import { AuthModal } from './components/AuthModal';
 import { ChatPresentationModal } from './components/ChatPresentationModal';
 import { CreateLOIBox } from './components/CreateLOIBox';
 import { CapitalRaisingBox } from './components/CapitalRaisingBox';
@@ -21,7 +22,8 @@ import { Input } from './components/Input';
 import { TextArea } from './components/TextArea';
 import { ResultViewer } from './components/ResultViewer';
 import { FileUploader } from './components/FileUploader';
-import { AuthModal } from './components/AuthModal';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
 import { DashboardSidebar } from './components/DashboardSidebar';
 import { CrmTracker } from './components/CrmTracker';
 import { PlaybookGenerator } from './components/PlaybookGenerator';
@@ -708,7 +710,6 @@ const App: React.FC = () => {
           <div>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight flex items-baseline flex-wrap gap-x-3">
               <span>Acquisition <span className="italic text-amber-400">Edge</span></span>
-              <span className="text-sm md:text-lg text-slate-500 font-sans font-medium tracking-normal normal-case">by DealScout.it</span>
             </h1>
             <p className="text-slate-500 text-sm font-medium tracking-wide mt-1 italic">
               "The acquisition intelligence tool built for buyers who think above the crowd."
@@ -1313,6 +1314,7 @@ const App: React.FC = () => {
         onClose={() => setPlaybookModalOpen(false)} 
         investorProfile={profile} 
       />
+      <Footer />
     </div>
   );
 };
