@@ -8,7 +8,8 @@
     "https://*.bizbuysell.com/*",
     "https://*.bizquest.com/*",
     "http://localhost:3000/*",
-    "https://*.run.app/*"
+    "https://*.run.app/*",
+    "https://dealscout.it.com/*"
   ],
   "icons": {
     "128": "icon128.png"

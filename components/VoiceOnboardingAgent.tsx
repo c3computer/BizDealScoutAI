@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, Modality, Type } from '@google/genai';
 
+const STEP_TEXTS: Record<string, string> = {
+  'welcome': "Welcome to Acquisition Edge. Your journey to acquiring the perfect business starts here. Let's discover what you're looking for and match you with opportunities that align with your vision. This process will help set up your Investor Profile and generate your Personal Playbook.",
+  'goals': "What are your Financial Goals? This helps us understand your targets (e.g., $1M in annual sales, $300K SDE).",
+  'mustHaves': "What are your Must-Haves? List specific industries, locations, or business models you require (or want to avoid).",
+  'superpowers': "What are your Superpowers? What unique skills or experiences do you bring to the table?",
+  'time': "Time Commitment. How much time can you dedicate to sourcing and diligence?",
+  'financing': "Financing Strategy. What is your preferred financing method?",
+  'operations': "Operational Strategy. What is your post-close operational strategy?",
+  'sourcing': "Sourcing Strategy. How do you plan to source deals?",
+  'team': "Deal Team. Do you have a deal team in place?",
+  'complete': "You're all set! Congrats! We're now building your personalized investor profile to screen all business opportunities against. All opportunities will be graded against your desires, financial goals, superpowers, and must haves. That way, your acquisitions will be tailored to your goals, budget, and preferences."
+};
+
+const STEPS_ORDER = ['welcome', 'goals', 'mustHaves', 'superpowers', 'time', 'financing', 'operations', 'sourcing', 'team', 'complete'];
+
 interface VoiceOnboardingAgentProps {
   currentStepId: string;
   onUpdateAnswer: (stepId: string, answer: string) => void;
@@ -115,6 +130,13 @@ export const VoiceOnboardingAgent: React.FC<VoiceOnboardingAgentProps> = ({
               const processor = audioContext.createScriptProcessor(4096, 1, 1);
               processorRef.current = processor;
 
+              const initialPrompt = `Hello! Please introduce yourself by saying EXACTLY: "Hi, this is Taylor and I'll walk you through the Onboarding process by voice." Then, read the text for the current step (${currentStepIdRef.current}): "${STEP_TEXTS[currentStepIdRef.current]}". Remember to use a professional tone and moderate pacing.`;
+              sessionPromise.then((session) => {
+                if (isActive) {
+                  session.sendRealtimeInput([{ text: initialPrompt }]);
+                }
+              });
+
               processor.onaudioprocess = (e) => {
                 const inputData = e.inputBuffer.getChannelData(0);
                 const pcm16 = new Int16Array(inputData.length);
@@ -169,10 +191,18 @@ export const VoiceOnboardingAgent: React.FC<VoiceOnboardingAgentProps> = ({
                   }
                 } else if (call.name === 'nextStep') {
                   onNextStepRef.current();
+                  
+                  const currentIndex = STEPS_ORDER.indexOf(currentStepIdRef.current);
+                  const nextStepId = currentIndex >= 0 && currentIndex < STEPS_ORDER.length - 1 
+                    ? STEPS_ORDER[currentIndex + 1] 
+                    : 'complete';
+
                   responses.push({
                     id: call.id,
                     name: call.name,
-                    response: { result: "Moved to next step." }
+                    response: { 
+                      result: `Moved to next step: ${nextStepId}. Please read the following text to the user with a professional tone and moderate pacing: "${STEP_TEXTS[nextStepId]}"` 
+                    }
                   });
                 }
               }
@@ -197,30 +227,19 @@ export const VoiceOnboardingAgent: React.FC<VoiceOnboardingAgentProps> = ({
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: "Zephyr" } },
           },
-          systemInstruction: `You are a helpful onboarding voice assistant for Acquisition Edge. Your job is to guide the user through a series of questions to build their investor profile.
-The user is currently on the step: ${currentStepIdRef.current}.
-The steps are:
-0. welcome: Greet the user and introduce the onboarding process.
-1. goals: What are your financial targets (e.g., $1M in annual sales, $300K SDE)?
-2. mustHaves: List specific industries, locations, or business models you require (or want to avoid).
-3. superpowers: What unique skills or experiences do you bring to the table?
-4. time: How much time can you dedicate to sourcing and diligence?
-5. financing: What is your preferred financing method?
-6. operations: What is your post-close operational strategy?
-7. sourcing: How do you plan to source deals?
-8. team: Do you have a deal team in place?
-9. complete: Congratulate the user on completing the onboarding.
+          systemInstruction: `You are Taylor, a helpful onboarding voice assistant for Acquisition Edge. Your job is to guide the user through a series of questions to build their investor profile.
+You must speak with a professional tone and moderate pacing to clearly articulate the info for the user.
 
 Language: The user has selected ${language}. You must speak to the user in ${language}.
 
 Instructions:
-- If the current step is 'welcome', greet the user, briefly explain that you will ask them a few questions, and use the 'nextStep' tool to move to the first question.
-- For question steps (goals to team): Ask the question for the current step. Wait for the user to answer.
-- When the user answers, use the 'updateAnswer' tool to save their answer.
+- When the session starts, you will receive a text prompt asking you to introduce yourself and read the first step. Do exactly that.
+- For question steps (goals to team): Wait for the user to answer after you read the question.
+- When the user answers, you MUST capture their spoken speech-to-text accurately and use the 'updateAnswer' tool to save their answer into the box on the current page.
   - IMPORTANT: If the user speaks in Spanish, you MUST translate their answer to English and save a bilingual version (e.g., 'Spanish Answer / English Translation') using the 'updateAnswer' tool. If English, just save the English answer.
 - After saving the answer, use the 'nextStep' tool to move to the next step.
-- Then ask the question for the new step.
-- Keep your spoken responses brief and conversational.
+- The 'nextStep' tool will return the text for the new step. You must then read that new text to the user.
+- Keep your spoken responses professional, clear, and moderately paced.
 - When the step is 'complete', tell the user they are done and they can close the voice assistant.`,
           tools: [{
             functionDeclarations: [
