@@ -75,9 +75,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Trigger Drive Sync (Load)
       await loadFromDrive(newUser);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to process login", err);
-      setSyncError("Login failed during profile fetch.");
+      setSyncError(`Login failed during profile fetch: ${err.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -86,15 +86,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 3. Listen for OAuth success message from popup
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      const origin = event.origin;
+      const origin = event.origin || '';
+      console.log("Received message from origin:", origin, event.data);
       if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('127.0.0.1') && !origin.includes('dealscout.it.com')) {
+        console.warn("Origin not allowed:", origin);
         return;
       }
       
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        console.log("OAuth success received");
         handleTokenResponse(event.data.tokens);
       } else if (event.data?.type === 'OAUTH_AUTH_ERROR') {
+        console.error("OAuth error received:", event.data.error);
         setSyncError(`Sign-in failed: ${event.data.error}`);
+        setIsSyncing(false);
       }
     };
     
