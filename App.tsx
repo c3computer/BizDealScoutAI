@@ -1194,6 +1194,71 @@ const App: React.FC = () => {
           {/* Card 5: Capital Raising & Deal Terms */}
           <CapitalRaisingBox profile={profile} deal={deal} analysis={result} />
 
+          {/* 2. Growth & Scaling Context (MOVED HERE) */}
+          <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-xl overflow-hidden relative group">
+             <div className="absolute top-0 left-0 w-1 h-full bg-slate-600 group-hover:bg-green-400 transition-colors"></div>
+             <div className="p-6">
+                <h2 className="text-lg font-display font-bold text-white uppercase mb-4 flex items-center">
+                   <svg className="w-5 h-5 mr-2 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                   </svg>
+                   Growth & Scaling Context
+                </h2>
+                
+                <TextArea 
+                    label="Social Media Links / Ad URLs / Marketing Context"
+                    placeholder="Paste Facebook/IG links, YouTube channels, descriptions of current ads, or any known marketing efforts here..."
+                    value={deal.growthContext || ''}
+                    onChange={(e) => setDeal({...deal, growthContext: e.target.value})}
+                    className="min-h-[100px] text-sm"
+                />
+                
+                <p className="text-[10px] text-slate-500 italic mb-4">
+                   * Documents uploaded above (P&Ls, etc.) will also be analyzed for growth opportunities.
+                </p>
+
+                <button
+                    onClick={handleGrowthAnalysis}
+                    disabled={growthLoading}
+                    className={`w-full py-3 uppercase font-display font-bold tracking-widest text-slate-900 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 rounded
+                        ${growthLoading ? 'bg-slate-600' : 'bg-green-400 hover:bg-green-300 shadow-[0_0_15px_rgba(74,222,128,0.3)]'}
+                    `}
+                >
+                    {growthLoading ? 'Generating Playbook...' : 'Generate Growth & Exit Strategy'}
+                </button>
+             </div>
+          </div>
+
+          {/* 3. Growth Playbook Result Box */}
+          <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-xl min-h-[400px] p-8 relative overflow-hidden flex flex-col">
+             {/* Decorative Background Element */}
+             <div className="absolute top-0 right-0 w-32 h-32 bg-green-400 opacity-[0.03] rounded-bl-full pointer-events-none"></div>
+             
+             <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+                <h3 className="font-display font-bold text-xl uppercase tracking-wider text-slate-200">
+                    Exit Strategy & Growth Playbook
+                </h3>
+                {growthResult && (
+                    <button 
+                        onClick={() => setGrowthResult(null)}
+                        className="text-xs text-slate-500 hover:text-green-400 uppercase font-bold transition-colors"
+                    >
+                        Clear
+                    </button>
+                )}
+             </div>
+
+             <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
+                <ResultViewer 
+                    result={growthResult} 
+                    loading={growthLoading} 
+                    dealTitle={`Growth Plan: ${deal.keywords || 'Business'}`} 
+                    loadingMessage="Analyzing Scaling Stages and Money Models..."
+                    deal={deal}
+                />
+             </div>
+          </div>
+
         </div>
 
         {/* RIGHT COLUMN: Results & Growth Input */}
@@ -1256,71 +1321,6 @@ const App: React.FC = () => {
                     loadingMessage={`Benchmarking ${deal.keywords || 'industry'} metrics against SOWS & BRIT frameworks...`}
                     deal={deal}
                     showReferences={true}
-                />
-             </div>
-          </div>
-
-          {/* 2. Growth & Scaling Context (MOVED HERE) */}
-          <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-xl overflow-hidden relative group">
-             <div className="absolute top-0 left-0 w-1 h-full bg-slate-600 group-hover:bg-green-400 transition-colors"></div>
-             <div className="p-6">
-                <h2 className="text-lg font-display font-bold text-white uppercase mb-4 flex items-center">
-                   <svg className="w-5 h-5 mr-2 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                   </svg>
-                   Growth & Scaling Context
-                </h2>
-                
-                <TextArea 
-                    label="Social Media Links / Ad URLs / Marketing Context"
-                    placeholder="Paste Facebook/IG links, YouTube channels, descriptions of current ads, or any known marketing efforts here..."
-                    value={deal.growthContext || ''}
-                    onChange={(e) => setDeal({...deal, growthContext: e.target.value})}
-                    className="min-h-[100px] text-sm"
-                />
-                
-                <p className="text-[10px] text-slate-500 italic mb-4">
-                   * Documents uploaded above (P&Ls, etc.) will also be analyzed for growth opportunities.
-                </p>
-
-                <button
-                    onClick={handleGrowthAnalysis}
-                    disabled={growthLoading}
-                    className={`w-full py-3 uppercase font-display font-bold tracking-widest text-slate-900 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 rounded
-                        ${growthLoading ? 'bg-slate-600' : 'bg-green-400 hover:bg-green-300 shadow-[0_0_15px_rgba(74,222,128,0.3)]'}
-                    `}
-                >
-                    {growthLoading ? 'Generating Playbook...' : 'Generate Growth & Exit Strategy'}
-                </button>
-             </div>
-          </div>
-
-          {/* 3. Growth Playbook Result Box */}
-          <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-xl min-h-[400px] p-8 relative overflow-hidden flex flex-col">
-             {/* Decorative Background Element */}
-             <div className="absolute top-0 right-0 w-32 h-32 bg-green-400 opacity-[0.03] rounded-bl-full pointer-events-none"></div>
-             
-             <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-                <h3 className="font-display font-bold text-xl uppercase tracking-wider text-slate-200">
-                    Exit Strategy & Growth Playbook
-                </h3>
-                {growthResult && (
-                    <button 
-                        onClick={() => setGrowthResult(null)}
-                        className="text-xs text-slate-500 hover:text-green-400 uppercase font-bold transition-colors"
-                    >
-                        Clear
-                    </button>
-                )}
-             </div>
-
-             <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
-                <ResultViewer 
-                    result={growthResult} 
-                    loading={growthLoading} 
-                    dealTitle={`Growth Plan: ${deal.keywords || 'Business'}`} 
-                    loadingMessage="Analyzing Scaling Stages and Money Models..."
-                    deal={deal}
                 />
              </div>
           </div>

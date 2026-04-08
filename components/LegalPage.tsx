@@ -3,18 +3,22 @@ import { Header } from './Header';
 import { Footer } from './Footer';
 
 export const LegalPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'privacy' | 'terms'>('privacy');
+  const [activeTab, setActiveTab] = useState<'privacy' | 'terms' | 'about' | 'contact'>('privacy');
 
   useEffect(() => {
     const path = window.location.pathname;
     if (path === '/terms') {
       setActiveTab('terms');
+    } else if (path === '/about') {
+      setActiveTab('about');
+    } else if (path === '/contact') {
+      setActiveTab('contact');
     } else {
       setActiveTab('privacy');
     }
   }, []);
 
-  const switchTab = (tab: 'privacy' | 'terms') => {
+  const switchTab = (tab: 'privacy' | 'terms' | 'about' | 'contact') => {
     setActiveTab(tab);
     window.history.pushState({}, '', `/${tab}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -27,20 +31,44 @@ export const LegalPage: React.FC = () => {
       {/* HERO */}
       <div className="bg-[#141418] border-b border-[#2a2a34] px-6 md:px-12 py-16 relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-96 h-96 bg-[radial-gradient(circle,rgba(201,168,76,0.12)_0%,transparent_65%)] pointer-events-none"></div>
-        <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-[#C9A84C] mb-4">// Legal & Compliance</p>
-        <h1 className="font-display text-4xl md:text-5xl font-normal leading-tight text-[#edeae2] max-w-2xl">
-          Transparency<br/><em className="italic text-[#C9A84C]">by design.</em>
-        </h1>
-        <p className="text-[#8a8796] text-sm mt-4 max-w-xl">
-          DealScout AI is operated by C4 Infinity LLC. These documents govern your use of our platform and describe how we handle your data.
-        </p>
-        <div className="inline-flex items-center gap-2 bg-[rgba(201,168,76,0.12)] border border-[rgba(201,168,76,0.25)] px-3.5 py-1.5 font-mono text-[10px] tracking-[0.1em] text-[#C9A84C] mt-6">
-          ⬡ Effective Date: April 7, 2025 &nbsp;|&nbsp; Version 1.0
-        </div>
+        {activeTab === 'about' ? (
+          <>
+            <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-[#C9A84C] mb-4">// Company Overview</p>
+            <h1 className="font-display text-4xl md:text-5xl font-normal leading-tight text-[#edeae2] max-w-2xl">
+              About <em className="italic text-[#C9A84C]">C4 Infinity</em>
+            </h1>
+            <p className="text-[#8a8796] text-sm mt-4 max-w-xl">
+              Building intelligent systems at the intersection of AI, private capital, and business acquisition.
+            </p>
+          </>
+        ) : activeTab === 'contact' ? (
+          <>
+            <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-[#C9A84C] mb-4">// Get in Touch</p>
+            <h1 className="font-display text-4xl md:text-5xl font-normal leading-tight text-[#edeae2] max-w-2xl">
+              Contact <em className="italic text-[#C9A84C]">C4 Infinity</em>
+            </h1>
+            <p className="text-[#8a8796] text-sm mt-4 max-w-xl">
+              Ready to explore a deal, discuss a project, or connect with our team? We respond within one business day.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-[#C9A84C] mb-4">// Legal & Compliance</p>
+            <h1 className="font-display text-4xl md:text-5xl font-normal leading-tight text-[#edeae2] max-w-2xl">
+              Transparency<br/><em className="italic text-[#C9A84C]">by design.</em>
+            </h1>
+            <p className="text-[#8a8796] text-sm mt-4 max-w-xl">
+              DealScout AI is operated by C4 Infinity LLC. These documents govern your use of our platform and describe how we handle your data.
+            </p>
+            <div className="inline-flex items-center gap-2 bg-[rgba(201,168,76,0.12)] border border-[rgba(201,168,76,0.25)] px-3.5 py-1.5 font-mono text-[10px] tracking-[0.1em] text-[#C9A84C] mt-6">
+              ⬡ Effective Date: April 7, 2025 &nbsp;|&nbsp; Version 1.0
+            </div>
+          </>
+        )}
       </div>
 
       {/* TABS */}
-      <div className="flex border-b border-[#2a2a34] bg-[#141418] px-6 md:px-12 sticky top-0 z-40">
+      <div className="flex flex-wrap border-b border-[#2a2a34] bg-[#141418] px-6 md:px-12 sticky top-0 z-40">
         <button 
           className={`bg-transparent border-none font-sans text-[13px] font-medium tracking-[0.04em] px-6 py-4 cursor-pointer relative transition-colors uppercase ${activeTab === 'privacy' ? 'text-[#C9A84C]' : 'text-[#8a8796]'}`}
           onClick={() => switchTab('privacy')}
@@ -54,6 +82,20 @@ export const LegalPage: React.FC = () => {
         >
           Terms of Service
           {activeTab === 'terms' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#C9A84C]"></div>}
+        </button>
+        <button 
+          className={`bg-transparent border-none font-sans text-[13px] font-medium tracking-[0.04em] px-6 py-4 cursor-pointer relative transition-colors uppercase ${activeTab === 'about' ? 'text-[#C9A84C]' : 'text-[#8a8796]'}`}
+          onClick={() => switchTab('about')}
+        >
+          About Us
+          {activeTab === 'about' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#C9A84C]"></div>}
+        </button>
+        <button 
+          className={`bg-transparent border-none font-sans text-[13px] font-medium tracking-[0.04em] px-6 py-4 cursor-pointer relative transition-colors uppercase ${activeTab === 'contact' ? 'text-[#C9A84C]' : 'text-[#8a8796]'}`}
+          onClick={() => switchTab('contact')}
+        >
+          Contact
+          {activeTab === 'contact' && <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#C9A84C]"></div>}
         </button>
       </div>
 
@@ -78,7 +120,7 @@ export const LegalPage: React.FC = () => {
                 <li><a href="#p10" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Policy Updates</a></li>
                 <li><a href="#p11" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Contact</a></li>
               </>
-            ) : (
+            ) : activeTab === 'terms' ? (
               <>
                 <li><a href="#t1" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Acceptance of Terms</a></li>
                 <li><a href="#t2" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Description of Service</a></li>
@@ -95,13 +137,110 @@ export const LegalPage: React.FC = () => {
                 <li><a href="#t13" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Changes to Terms</a></li>
                 <li><a href="#t14" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Contact</a></li>
               </>
-            )}
+            ) : activeTab === 'about' ? (
+              <>
+                <li><a href="#a1" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Our Story</a></li>
+                <li><a href="#a2" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">What We Do</a></li>
+                <li><a href="#a3" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Managing Member</a></li>
+                <li><a href="#a4" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Active Projects</a></li>
+                <li><a href="#a5" className="block text-xs text-[#8a8796] no-underline py-1 px-2.5 border-l-2 border-[#2a2a34] hover:text-[#C9A84C] hover:border-[#C9A84C] transition-colors leading-relaxed">Our Team</a></li>
+              </>
+            ) : null}
           </ul>
         </aside>
 
         {/* CONTENT */}
         <div className="py-12 md:pl-10 md:border-l border-[#2a2a34]">
           
+          {activeTab === 'about' && (
+            <div>
+              <div className="mb-14 pb-12 border-b border-[#2a2a34]" id="a1">
+                <p className="font-mono text-[10px] tracking-[0.1em] text-[#C9A84C] mb-2">// 01</p>
+                <h2 className="font-display text-[22px] font-normal text-[#edeae2] mb-5 leading-snug">Our Story</h2>
+                <p className="text-[#8a8796] mb-3.5 text-sm">C4 Infinity LLC is a Florida-based business consulting and acquisition firm founded on a simple premise: that the right intelligence, applied at the right moment, can unlock extraordinary value in even overlooked deals. We specialize in AI-powered tools for small business operators, deal buyers, and private lenders who need an analytical edge in competitive markets.</p>
+                <p className="text-[#8a8796] mb-3.5 text-sm">From our base in Pembroke Pines, Florida, we operate at the crossroads of technology consulting, e-commerce optimization, and business acquisition advisory — partnering with venture capital groups focused on M&A and real estate to help clients identify, evaluate, and close deals with confidence.</p>
+              </div>
+
+              <div className="mb-14 pb-12 border-b border-[#2a2a34]" id="a2">
+                <p className="font-mono text-[10px] tracking-[0.1em] text-[#C9A84C] mb-2">// 02</p>
+                <h2 className="font-display text-[22px] font-normal text-[#edeae2] mb-5 leading-snug">What We Do</h2>
+                <p className="text-[#8a8796] mb-3.5 text-sm">C4 Infinity delivers value across three core practice areas:</p>
+                <ul className="my-3 pl-0 list-none">
+                  <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight"><strong className="text-[#edeae2] font-semibold">AI Micro-SaaS Development:</strong> We design and build targeted AI-powered software tools for small businesses — from deal analyzers and CRM pipelines to velocity banking dashboards and e-commerce optimization engines.</li>
+                  <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight"><strong className="text-[#edeae2] font-semibold">Business Acquisition Advisory:</strong> Through our Acquisition Edge platform, we support private lenders and acquisition entrepreneurs with AI-driven deal analysis, contrarian scoring, and private capital positioning.</li>
+                  <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight"><strong className="text-[#edeae2] font-semibold">E-Commerce Optimization:</strong> We help direct-to-consumer operators reduce friction, improve conversion, and scale sustainably through data-driven strategy and automation.</li>
+                </ul>
+                <div className="bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] p-5 my-5 text-[13px] text-[#8a8796] leading-relaxed">
+                  <strong className="text-[#edeae2] font-semibold">Our Philosophy:</strong> We don't build generic software. Every tool we create is purpose-built for a specific operator's workflow — ruthlessly focused, relentlessly practical, and designed to surface insight rather than add noise.
+                </div>
+              </div>
+
+              <div className="mb-14 pb-12 border-b border-[#2a2a34]" id="a3">
+                <p className="font-mono text-[10px] tracking-[0.1em] text-[#C9A84C] mb-2">// 03</p>
+                <h2 className="font-display text-[22px] font-normal text-[#edeae2] mb-5 leading-snug">Managing Member</h2>
+                <div className="grid grid-cols-[auto_1fr] gap-8 items-start mt-2">
+                  <div className="w-[140px] h-[160px] overflow-hidden border-2 border-[#2a2a34] shrink-0">
+                    <img src="/christopher-carwise.png" alt="Christopher Carwise" className="w-full h-full object-cover object-top" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-[20px] font-normal text-[#edeae2] mb-1">Christopher Carwise</h3>
+                    <p className="font-mono text-[10px] tracking-[0.12em] uppercase text-[#C9A84C] mb-4">Managing Member · C4 Infinity LLC</p>
+                    <p className="text-[#8a8796] mb-3.5 text-sm">Christopher is the founder and Managing Member of C4 Infinity LLC, bringing a systems-thinking mindset to business consulting, software development, and deal acquisition. With a background spanning AI product development, financial strategy, and private capital advisory, he leads the firm's portfolio of micro-SaaS platforms and acquisition intelligence tools.</p>
+                    <p className="text-[#8a8796] mb-3.5 text-sm">Christopher is the architect behind DealScout AI and the Acquisition Edge brand — platforms designed to give deal buyers and private lenders a decisive analytical advantage. He is a practitioner of velocity banking techniques and has deep fluency in acquisition terminology including SDE, CIM, LOI, POF, NDA workflows, and due diligence structuring.</p>
+                    <p className="text-[#8a8796] mb-3.5 text-sm">He is supported by his wife and business partner, <strong className="text-[#edeae2] font-semibold">Chantal P. Carwise</strong>, who serves as Member and Secretary of C4 Infinity LLC.</p>
+                    <div className="mt-4 flex gap-3 flex-wrap">
+                      <a href="https://www.linkedin.com/in/christopher-carwise-a6635b9/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1a1a20] border border-[#2a2a34] font-mono text-[10px] tracking-[0.08em] uppercase text-[#C9A84C] no-underline transition-colors hover:border-[#C9A84C]">⬡ LinkedIn Profile</a>
+                      <a href="https://www.c4infinity.com" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1a1a20] border border-[#2a2a34] font-mono text-[10px] tracking-[0.08em] uppercase text-[#8a8796] no-underline transition-colors hover:border-[#8a8796]">⬡ C4 Infinity</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-14 pb-12 border-b border-[#2a2a34]" id="a4">
+                <p className="font-mono text-[10px] tracking-[0.1em] text-[#C9A84C] mb-2">// 04</p>
+                <h2 className="font-display text-[22px] font-normal text-[#edeae2] mb-5 leading-snug">Active Projects</h2>
+
+                <div className="bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] p-5 mb-5 text-[13px] text-[#8a8796] leading-relaxed">
+                  <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] mb-2.5">▸ Acquisition Edge · Private Capital Platform</p>
+                  <strong className="text-[#edeae2] font-semibold">Acquisition Edge</strong> is C4 Infinity's flagship brand targeting private lenders and acquisition entrepreneurs. The platform positions an AI-powered deal analysis engine as the core differentiator for capital deployment decisions — providing contrarian scoring, red-flag detection, and deal pipeline management under a dark executive aesthetic built for serious operators.
+                </div>
+
+                <div className="bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] p-5 mb-5 text-[13px] text-[#8a8796] leading-relaxed">
+                  <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] mb-2.5">▸ DealScout AI · dealscout.it.com</p>
+                  <strong className="text-[#edeae2] font-semibold">DealScout AI</strong> is an AI-powered contrarian deal analyzer for business acquisition leads, hosted on Google Cloud Run. The platform includes a Chrome Extension for auto-filling NDA requests and scraping deal metrics from listing sites like BizBuySell, a color-coded CRM pipeline, batch deal queuing, and AI-generated scoring with red-flag analysis. A five-video tutorial series supports onboarding and platform education.
+                </div>
+
+                <div className="bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] p-5 mb-5 text-[13px] text-[#8a8796] leading-relaxed">
+                  <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] mb-2.5">▸ VelocityFlow · Debt Management SaaS</p>
+                  <strong className="text-[#edeae2] font-semibold">VelocityFlow</strong> is a debt management SaaS concept built around velocity banking techniques. The platform features CSV-based transaction import and analysis, Credit Card Gap calculation (measuring credit card dependency), and AI-generated personalized velocity banking attack plans — supported by a proprietary credit card benefits database.
+                </div>
+
+                <div className="bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] p-5 text-[13px] text-[#8a8796] leading-relaxed">
+                  <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] mb-2.5">▸ E-Commerce & Advisory Consulting</p>
+                  C4 Infinity provides hands-on consulting for e-commerce operators seeking conversion optimization, automation strategy, and direct-to-consumer growth. The firm also supports M&A and real estate ventures through a venture capital group partnership, providing acquisition analysis and advisory services across a range of asset classes.
+                </div>
+              </div>
+
+              <div className="mb-14 pb-12 border-none" id="a5">
+                <p className="font-mono text-[10px] tracking-[0.1em] text-[#C9A84C] mb-2">// 05</p>
+                <h2 className="font-display text-[22px] font-normal text-[#edeae2] mb-5 leading-snug">Our Team</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
+                  <div className="bg-[#1a1a20] border border-[#2a2a34] p-6">
+                    <p className="font-display text-[17px] text-[#edeae2] mb-1">Christopher Carwise</p>
+                    <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] mb-3">Managing Member</p>
+                    <p className="text-[13px] text-[#8a8796]">Strategy, Product Development, AI Platform Architecture, Acquisition Advisory, Private Capital Positioning</p>
+                  </div>
+                  <div className="bg-[#1a1a20] border border-[#2a2a34] p-6">
+                    <p className="font-display text-[17px] text-[#edeae2] mb-1">Chantal P. Carwise</p>
+                    <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] mb-3">Member &amp; Secretary</p>
+                    <p className="text-[13px] text-[#8a8796]">Operations, Compliance, Business Administration, Legal Documentation, Organizational Management</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+
           {activeTab === 'privacy' && (
             <div>
               <div className="mb-14 pb-12 border-b border-[#2a2a34]" id="p1">
@@ -392,6 +531,75 @@ export const LegalPage: React.FC = () => {
                   <p className="text-[#8a8796] mb-1.5 text-sm">Phone: <a href="tel:7542299225" className="text-[#C9A84C] hover:underline">754-229-9225</a></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Website: <a href="https://www.c4infinity.com" target="_blank" rel="noreferrer" className="text-[#C9A84C] hover:underline">www.c4infinity.com</a></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Platform: <a href="https://dealscout.it.com" target="_blank" rel="noreferrer" className="text-[#C9A84C] hover:underline">dealscout.it.com</a></p>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeTab === 'contact' && (
+            <div>
+              <div className="mb-14 pb-12 border-none">
+                <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-10 items-start mb-14">
+                  <div>
+                    <div className="w-full aspect-[3/4] overflow-hidden border border-[#2a2a34] relative">
+                      <img src="/christopher-carwise.png" alt="Christopher Carwise — Managing Member, C4 Infinity LLC" className="w-full h-full object-cover object-top" />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[rgba(13,13,15,0.92)] to-transparent px-4 pt-5 pb-3.5">
+                        <p className="font-display text-[15px] text-[#edeae2]">Christopher Carwise</p>
+                        <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C]">Managing Member</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-[#4a4858] mb-6">// Primary Contact</p>
+
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
+                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">Phone</span>
+                        <a href="tel:7542299225" className="text-[18px] font-display text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">754-229-9225</a>
+                      </div>
+                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
+                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">Email</span>
+                        <a href="mailto:sales@c4infinity.com" className="text-[15px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">sales@c4infinity.com</a>
+                      </div>
+                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
+                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">Web</span>
+                        <a href="https://www.c4infinity.com" target="_blank" rel="noreferrer" className="text-[15px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">www.c4infinity.com</a>
+                      </div>
+                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
+                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">Platform</span>
+                        <a href="https://dealscout.it.com" target="_blank" rel="noreferrer" className="text-[15px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">dealscout.it.com</a>
+                      </div>
+                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
+                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">LinkedIn</span>
+                        <a href="https://www.linkedin.com/in/christopher-carwise-a6635b9/" target="_blank" rel="noreferrer" className="text-[14px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">christopher-carwise-a6635b9</a>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] px-6 py-5">
+                      <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#8a8796] mb-2">// Physical Address</p>
+                      <p className="font-display text-[16px] text-[#edeae2] mb-1">C4 Infinity LLC</p>
+                      <p className="text-[13px] text-[#8a8796]">8403 Pines Blvd, Suite 1018</p>
+                      <p className="text-[13px] text-[#8a8796]">Pembroke Pines, FL 33023</p>
+                      <p className="text-[12px] text-[#4a4858] mt-2 font-mono">Florida Limited Liability Company · EIN on file</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-[#4a4858] mb-4">// Location · Pembroke Pines, Florida</p>
+                  <div className="border border-[#2a2a34] overflow-hidden relative">
+                    <img src="/map.png" alt="C4 Infinity LLC — 8403 Pines Blvd, Suite 1018, Pembroke Pines FL 33023" className="w-full block max-h-[380px] object-cover" />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[rgba(13,13,15,0.95)] to-transparent px-6 pt-6 pb-5">
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div>
+                          <p className="font-display text-[16px] text-[#edeae2]">C4 Infinity LLC</p>
+                          <p className="text-[12px] text-[#8a8796] mt-0.5">8403 Pines Blvd, Suite 1018 · Pembroke Pines, FL 33023</p>
+                          <p className="text-[11px] text-[#4a4858] mt-0.5 font-mono">Near I-820 &amp; Pines Blvd · Between 86th Ave &amp; SW 84th Ave</p>
+                        </div>
+                        <a href="https://maps.google.com/?q=8403+Pines+Blvd+Suite+1018+Pembroke+Pines+FL+33023" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#C9A84C] text-[#0d0d0f] font-mono text-[10px] tracking-[0.08em] uppercase font-bold no-underline whitespace-nowrap hover:bg-[#a8873a] transition-colors">⬡ Get Directions</a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -23,7 +23,7 @@ root.render(
       <AuthProvider>
         <UserDashboard />
       </AuthProvider>
-    ) : path === '/privacy' || path === '/terms' || path === '/legal' ? (
+    ) : path === '/privacy' || path === '/terms' || path === '/legal' || path === '/about' || path === '/contact' ? (
       <AuthProvider>
         <LegalPage />
       </AuthProvider>
