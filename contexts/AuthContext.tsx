@@ -218,8 +218,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 2. Get Client ID from environment variables
       // We check VITE_GOOGLE_CLIENT_ID first (for Netlify), then fallback to process.env
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || (typeof process !== 'undefined' && process.env ? process.env.GOOGLE_CLIENT_ID : null);
+      let clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || (typeof process !== 'undefined' && process.env ? process.env.GOOGLE_CLIENT_ID : null);
       
+      if (clientId && typeof clientId === 'string') {
+        // Remove any accidental quotes that might have been added in Netlify env vars
+        clientId = clientId.replace(/^["']|["']$/g, '').trim();
+      }
+
       if (!clientId) {
         setSyncError('Configuration Missing: Please set VITE_GOOGLE_CLIENT_ID in your Netlify Environment Variables.');
         return;

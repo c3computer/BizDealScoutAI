@@ -16,7 +16,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const CLIENT_CONFIGURED = !!(import.meta.env.VITE_GOOGLE_CLIENT_ID || (typeof process !== 'undefined' && process.env && process.env.GOOGLE_CLIENT_ID));
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || (typeof process !== 'undefined' && process.env && process.env.GOOGLE_CLIENT_ID);
+  const CLIENT_CONFIGURED = !!clientId;
+  const displayClientId = typeof clientId === 'string' ? `${clientId.substring(0, 15)}...` : 'Not set';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -84,7 +86,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     By signing in, you grant Acquisition Edge permission to create and manage a specific configuration file in your Google Drive. We do not access your other files.
                 </p>
                 <p className="text-[10px] text-amber-500/50 text-center mt-1">
-                  Origin: {window.location.origin}
+                  Origin: {window.location.origin} <br/>
+                  Client ID: {displayClientId}
                 </p>
             </div>
         )}
