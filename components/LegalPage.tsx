@@ -6,6 +6,7 @@ export const LegalPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'privacy' | 'terms' | 'about' | 'contact'>('privacy');
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     const path = window.location.pathname;
     if (path === '/terms') {
       setActiveTab('terms');
@@ -201,13 +202,8 @@ export const LegalPage: React.FC = () => {
                 <h2 className="font-display text-[22px] font-normal text-[#edeae2] mb-5 leading-snug">Active Projects</h2>
 
                 <div className="bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] p-5 mb-5 text-[13px] text-[#8a8796] leading-relaxed">
-                  <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] mb-2.5">▸ Acquisition Edge · Private Capital Platform</p>
+                  <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] mb-2.5">▸ Acquisition Edge · Private Capital Platform · DealScout.it.com</p>
                   <strong className="text-[#edeae2] font-semibold">Acquisition Edge</strong> is C4 Infinity's flagship brand targeting private lenders and acquisition entrepreneurs. The platform positions an AI-powered deal analysis engine as the core differentiator for capital deployment decisions — providing contrarian scoring, red-flag detection, and deal pipeline management under a dark executive aesthetic built for serious operators.
-                </div>
-
-                <div className="bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] p-5 mb-5 text-[13px] text-[#8a8796] leading-relaxed">
-                  <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] mb-2.5">▸ DealScout AI · dealscout.it.com</p>
-                  <strong className="text-[#edeae2] font-semibold">DealScout AI</strong> is an AI-powered contrarian deal analyzer for business acquisition leads, hosted on Google Cloud Run. The platform includes a Chrome Extension for auto-filling NDA requests and scraping deal metrics from listing sites like BizBuySell, a color-coded CRM pipeline, batch deal queuing, and AI-generated scoring with red-flag analysis. A five-video tutorial series supports onboarding and platform education.
                 </div>
 
                 <div className="bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] p-5 mb-5 text-[13px] text-[#8a8796] leading-relaxed">
@@ -312,7 +308,7 @@ export const LegalPage: React.FC = () => {
                   <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight">Billing records are retained for <strong className="text-[#edeae2] font-semibold">7 years</strong> as required by law</li>
                   <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight">Anonymized, aggregated usage analytics may be retained indefinitely</li>
                 </ul>
-                <p className="text-[#8a8796] mb-3.5 text-sm">You may request earlier deletion at any time by contacting us at <a href="mailto:sales@c4infinity.com" className="text-[#C9A84C] hover:underline">sales@c4infinity.com</a>.</p>
+                <p className="text-[#8a8796] mb-3.5 text-sm">You may request earlier deletion at any time by contacting us via our <button onClick={() => switchTab('contact')} className="text-[#C9A84C] hover:underline bg-transparent border-none p-0 cursor-pointer">Contact page</button>.</p>
               </div>
 
               <div className="mb-14 pb-12 border-b border-[#2a2a34]" id="p6">
@@ -328,7 +324,7 @@ export const LegalPage: React.FC = () => {
                   <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight"><strong className="text-[#edeae2] font-semibold">Restriction:</strong> Request that we limit processing of your data in certain circumstances</li>
                   <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight"><strong className="text-[#edeae2] font-semibold">Opt-Out:</strong> Unsubscribe from marketing emails at any time via the unsubscribe link</li>
                 </ul>
-                <p className="text-[#8a8796] mb-3.5 text-sm">To exercise any of these rights, contact <a href="mailto:sales@c4infinity.com" className="text-[#C9A84C] hover:underline">sales@c4infinity.com</a>. We will respond within 30 days.</p>
+                <p className="text-[#8a8796] mb-3.5 text-sm">To exercise any of these rights, please use our <button onClick={() => switchTab('contact')} className="text-[#C9A84C] hover:underline bg-transparent border-none p-0 cursor-pointer">Contact page</button>. We will respond within 30 days.</p>
               </div>
 
               <div className="mb-14 pb-12 border-b border-[#2a2a34]" id="p7">
@@ -371,7 +367,7 @@ export const LegalPage: React.FC = () => {
                   <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-[#4a4858] mb-3">// Data Controller</p>
                   <p className="text-[#8a8796] mb-1.5 text-sm"><strong className="text-[#edeae2] font-semibold">C4 Infinity LLC</strong></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Managing Member: Christopher Carwise</p>
-                  <p className="text-[#8a8796] mb-1.5 text-sm">Email: <a href="mailto:sales@c4infinity.com" className="text-[#C9A84C] hover:underline">sales@c4infinity.com</a></p>
+                  <p className="text-[#8a8796] mb-1.5 text-sm">Contact: <button onClick={() => switchTab('contact')} className="text-[#C9A84C] hover:underline bg-transparent border-none p-0 cursor-pointer">Contact Form</button></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Phone: <a href="tel:7542299225" className="text-[#C9A84C] hover:underline">754-229-9225</a></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Website: <a href="https://www.c4infinity.com" target="_blank" rel="noreferrer" className="text-[#C9A84C] hover:underline">www.c4infinity.com</a></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Platform: <a href="https://dealscout.it.com" target="_blank" rel="noreferrer" className="text-[#C9A84C] hover:underline">dealscout.it.com</a></p>
@@ -426,7 +422,7 @@ export const LegalPage: React.FC = () => {
                   <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight">Provide accurate, complete, and current registration information</li>
                   <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight">Maintain the confidentiality of your login credentials</li>
                   <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight">Be solely responsible for all activity under your account</li>
-                  <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight">Notify us immediately of any unauthorized account access at <a href="mailto:sales@c4infinity.com" className="text-[#C9A84C] hover:underline">sales@c4infinity.com</a></li>
+                  <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight">Notify us immediately of any unauthorized account access via our <button onClick={() => switchTab('contact')} className="text-[#C9A84C] hover:underline bg-transparent border-none p-0 cursor-pointer">Contact page</button></li>
                   <li className="relative pl-5 text-sm text-[#8a8796] mb-2 before:content-['›'] before:absolute before:left-0 before:text-[#C9A84C] before:text-base before:leading-tight">Not share, sell, or transfer your account to any third party</li>
                 </ul>
                 <p className="text-[#8a8796] mb-3.5 text-sm">We reserve the right to terminate accounts that violate these Terms or that are suspected of unauthorized use.</p>
@@ -502,7 +498,7 @@ export const LegalPage: React.FC = () => {
                 <p className="font-mono text-[10px] tracking-[0.1em] text-[#C9A84C] mb-2">// 11</p>
                 <h2 className="font-display text-[22px] font-normal text-[#edeae2] mb-5 leading-snug">Termination</h2>
                 <p className="text-[#8a8796] mb-3.5 text-sm">We may suspend or terminate your access to the Service at any time, with or without cause, with or without notice, effective immediately. Reasons may include violation of these Terms, fraudulent activity, extended non-payment, or cessation of the Service.</p>
-                <p className="text-[#8a8796] mb-3.5 text-sm">You may terminate your account at any time by contacting <a href="mailto:sales@c4infinity.com" className="text-[#C9A84C] hover:underline">sales@c4infinity.com</a>. Upon termination, your right to use the Service ceases immediately. Provisions that by their nature should survive termination — including intellectual property, disclaimer, limitation of liability, and indemnification — shall survive.</p>
+                <p className="text-[#8a8796] mb-3.5 text-sm">You may terminate your account at any time by contacting us via our <button onClick={() => switchTab('contact')} className="text-[#C9A84C] hover:underline bg-transparent border-none p-0 cursor-pointer">Contact page</button>. Upon termination, your right to use the Service ceases immediately. Provisions that by their nature should survive termination — including intellectual property, disclaimer, limitation of liability, and indemnification — shall survive.</p>
               </div>
 
               <div className="mb-14 pb-12 border-b border-[#2a2a34]" id="t12">
@@ -527,7 +523,7 @@ export const LegalPage: React.FC = () => {
                   <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-[#4a4858] mb-3">// Legal Inquiries</p>
                   <p className="text-[#8a8796] mb-1.5 text-sm"><strong className="text-[#edeae2] font-semibold">C4 Infinity LLC</strong></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Managing Member: Christopher Carwise</p>
-                  <p className="text-[#8a8796] mb-1.5 text-sm">Email: <a href="mailto:sales@c4infinity.com" className="text-[#C9A84C] hover:underline">sales@c4infinity.com</a></p>
+                  <p className="text-[#8a8796] mb-1.5 text-sm">Contact: <button onClick={() => switchTab('contact')} className="text-[#C9A84C] hover:underline bg-transparent border-none p-0 cursor-pointer">Contact Form</button></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Phone: <a href="tel:7542299225" className="text-[#C9A84C] hover:underline">754-229-9225</a></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Website: <a href="https://www.c4infinity.com" target="_blank" rel="noreferrer" className="text-[#C9A84C] hover:underline">www.c4infinity.com</a></p>
                   <p className="text-[#8a8796] mb-1.5 text-sm">Platform: <a href="https://dealscout.it.com" target="_blank" rel="noreferrer" className="text-[#C9A84C] hover:underline">dealscout.it.com</a></p>
@@ -550,37 +546,66 @@ export const LegalPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-[#4a4858] mb-6">// Primary Contact</p>
+                    <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-[#4a4858] mb-6">// Send a Message</p>
 
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
-                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">Phone</span>
-                        <a href="tel:7542299225" className="text-[18px] font-display text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">754-229-9225</a>
+                    <form className="flex flex-col gap-6" onSubmit={(e) => { e.preventDefault(); alert('Message sent!'); }}>
+                      <div>
+                        <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#8a8796] mb-3">How can we help?</p>
+                        <div className="flex flex-wrap gap-2">
+                          {['Deal Analysis', 'Capital Raising', 'Something else'].map(opt => (
+                            <button type="button" key={opt} className="px-4 py-2 bg-[#1a1a20] border border-[#2a2a34] text-[#edeae2] text-[13px] hover:border-[#C9A84C] transition-colors rounded-full focus:bg-[#C9A84C] focus:text-[#0d0d0f]">
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
-                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">Email</span>
-                        <a href="mailto:sales@c4infinity.com" className="text-[15px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">sales@c4infinity.com</a>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#8a8796] mb-2 block">Full Name</label>
+                          <input type="text" placeholder="What's your name?" className="w-full bg-transparent border-b border-[#2a2a34] py-2 text-[#edeae2] text-[15px] focus:outline-none focus:border-[#C9A84C] transition-colors placeholder:text-[#4a4858]" required />
+                        </div>
+                        <div>
+                          <label className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#8a8796] mb-2 block">Email Address*</label>
+                          <input type="email" placeholder="Your work email address" className="w-full bg-transparent border-b border-[#2a2a34] py-2 text-[#edeae2] text-[15px] focus:outline-none focus:border-[#C9A84C] transition-colors placeholder:text-[#4a4858]" required />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
-                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">Web</span>
-                        <a href="https://www.c4infinity.com" target="_blank" rel="noreferrer" className="text-[15px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">www.c4infinity.com</a>
+                      
+                      <div>
+                        <label className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#8a8796] mb-2 block">Message</label>
+                        <textarea placeholder="What else can you share about the project?" rows={4} className="w-full bg-transparent border-b border-[#2a2a34] py-2 text-[#edeae2] text-[15px] focus:outline-none focus:border-[#C9A84C] transition-colors placeholder:text-[#4a4858] resize-none" required></textarea>
                       </div>
-                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
-                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">Platform</span>
-                        <a href="https://dealscout.it.com" target="_blank" rel="noreferrer" className="text-[15px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">dealscout.it.com</a>
+                      
+                      <div className="flex items-center gap-4 mt-2">
+                        <button type="submit" className="inline-flex items-center gap-2 px-6 py-3 bg-[#C9A84C] text-[#0d0d0f] font-mono text-[11px] tracking-[0.08em] uppercase font-bold hover:bg-[#a8873a] transition-colors rounded-full">
+                          Send message
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                        </button>
+                        <p className="text-[11px] text-[#8a8796]">By clicking on the button you agree with our <button type="button" onClick={() => switchTab('privacy')} className="text-[#C9A84C] hover:underline bg-transparent border-none p-0 cursor-pointer">privacy policy</button>.</p>
                       </div>
-                      <div className="flex items-center gap-4 px-5 py-4 bg-[#1a1a20] border border-[#2a2a34]">
-                        <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[60px]">LinkedIn</span>
-                        <a href="https://www.linkedin.com/in/christopher-carwise-a6635b9/" target="_blank" rel="noreferrer" className="text-[14px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">christopher-carwise-a6635b9</a>
-                      </div>
-                    </div>
+                    </form>
 
-                    <div className="mt-6 bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] px-6 py-5">
-                      <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#8a8796] mb-2">// Physical Address</p>
-                      <p className="font-display text-[16px] text-[#edeae2] mb-1">C4 Infinity LLC</p>
-                      <p className="text-[13px] text-[#8a8796]">8403 Pines Blvd, Suite 1018</p>
-                      <p className="text-[13px] text-[#8a8796]">Pembroke Pines, FL 33023</p>
-                      <p className="text-[12px] text-[#4a4858] mt-2 font-mono">Florida Limited Liability Company · EIN on file</p>
+                    <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="bg-[#1a1a20] border border-[#2a2a34] border-l-4 border-l-[#C9A84C] px-6 py-5">
+                        <p className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#8a8796] mb-2">// Physical Address</p>
+                        <p className="font-display text-[16px] text-[#edeae2] mb-1">C4 Infinity LLC</p>
+                        <p className="text-[13px] text-[#8a8796]">8403 Pines Blvd, Suite 1018</p>
+                        <p className="text-[13px] text-[#8a8796]">Pembroke Pines, FL 33023</p>
+                      </div>
+                      <div className="bg-[#1a1a20] border border-[#2a2a34] px-6 py-5 flex flex-col justify-center gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[50px]">Phone</span>
+                          <a href="tel:7542299225" className="text-[14px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">754-229-9225</a>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[50px]">Web</span>
+                          <a href="https://www.c4infinity.com" target="_blank" rel="noreferrer" className="text-[14px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">www.c4infinity.com</a>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-[9px] tracking-[0.12em] uppercase text-[#C9A84C] min-w-[50px]">LinkedIn</span>
+                          <a href="https://www.linkedin.com/in/christopher-carwise-a6635b9/" target="_blank" rel="noreferrer" className="text-[14px] text-[#edeae2] no-underline hover:text-[#C9A84C] transition-colors">christopher-carwise</a>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

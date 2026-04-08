@@ -113,6 +113,11 @@ const App: React.FC = () => {
     }
   }, [chatMessages, chatLoading]);
 
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Load Profile from User if available, otherwise from local storage
   useEffect(() => {
     if (user?.profile) {
