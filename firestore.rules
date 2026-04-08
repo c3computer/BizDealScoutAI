@@ -1,0 +1,151 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - email: string (required)
+    //   - name: string (required)
+    //   - picture: string (optional)
+    //   - profile: map (optional)
+    //   - createdAt: timestamp (required, immutable)
+    //   - updatedAt: timestamp (required)
+    //
+    // Collection: users/{userId}/deals
+    // Document ID: {dealId}
+    // Fields:
+    //   - userId: string (required, immutable)
+    //   - url: string (required)
+    //   - dealData: map (optional)
+    //   - analysis: map (optional)
+    //   - metrics: map (optional)
+    //   - crm: map (optional)
+    //   - personalNotes: string (optional)
+    //   - savedAt: timestamp (required, immutable)
+    //   - updatedAt: timestamp (required)
+    //
+    // Collection: users/{userId}/deals/{dealId}/chats
+    // Document ID: {chatId}
+    // Fields:
+    //   - userId: string (required, immutable)
+    //   - dealId: string (required, immutable)
+    //   - role: string (required, 'user' or 'model')
+    //   - text: string (required)
+    //   - timestamp: timestamp (required, immutable)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isTimestamp(field) {
+      return request.resource.data[field] is timestamp;
+    }
+
+    function isString(field) {
+      return request.resource.data[field] is string;
+    }
+
+    function isOptionalString(field) {
+      return !('field' in request.resource.data) || request.resource.data[field] is string;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser() {
+      let data = request.resource.data;
+      return hasRequiredFields(['email', 'name', 'createdAt', 'updatedAt']) &&
+             isValidEmail(data.email) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             (!('picture' in data) || data.picture is string) &&
+             (!('profile' in data) || data.profile is map) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidDeal(userId) {
+      let data = request.resource.data;
+      return hasRequiredFields(['userId', 'url', 'savedAt', 'updatedAt']) &&
+             data.userId == userId &&
+             isValidUrl(data.url) &&
+             data.url.size() < 1000 &&
+             (!('dealData' in data) || data.dealData is map) &&
+             (!('analysis' in data) || data.analysis is map) &&
+             (!('metrics' in data) || data.metrics is map) &&
+             (!('crm' in data) || data.crm is map) &&
+             (!('personalNotes' in data) || (data.personalNotes is string && data.personalNotes.size() < 10000)) &&
+             data.savedAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidChat(userId, dealId) {
+      let data = request.resource.data;
+      return hasRequiredFields(['userId', 'dealId', 'role', 'text', 'timestamp']) &&
+             data.userId == userId &&
+             data.dealId == dealId &&
+             data.role in ['user', 'model'] &&
+             data.text is string && data.text.size() < 50000 &&
+             data.timestamp is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser();
+      allow update: if isOwner(userId) && isValidUser() && 
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(userId);
+
+      match /deals/{dealId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidDeal(userId);
+        allow update: if isOwner(userId) && isValidDeal(userId) &&
+                      request.resource.data.userId == resource.data.userId &&
+                      request.resource.data.savedAt == resource.data.savedAt;
+        allow delete: if isOwner(userId);
+
+        match /chats/{chatId} {
+          allow read: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidChat(userId, dealId);
+          allow update: if isOwner(userId) && isValidChat(userId, dealId) &&
+                        request.resource.data.userId == resource.data.userId &&
+                        request.resource.data.dealId == resource.data.dealId &&
+                        request.resource.data.timestamp == resource.data.timestamp;
+          allow delete: if isOwner(userId);
+        }
+      }
+    }
+  }
+}

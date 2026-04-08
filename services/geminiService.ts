@@ -142,10 +142,36 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
     };
   }
 
+  // If data is missing but we have a downloadUrl, fetch it
+  let fileData = file.data;
+  if (!fileData && file.downloadUrl) {
+    try {
+      console.log(`Fetching ${file.name} from Firebase Storage...`);
+      const response = await fetch(file.downloadUrl);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      fileData = await new Promise((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]); // Get base64 part
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.error(`Failed to fetch file ${file.name} from Storage`, e);
+      throw new Error(`Failed to download file ${file.name} for analysis.`);
+    }
+  }
+
+  if (!fileData) {
+    throw new Error(`File ${file.name} has no data and no download URL.`);
+  }
+
   // Handle .docx files using mammoth
   if (file.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx')) {
     try {
-      const binaryString = atob(file.data);
+      const binaryString = atob(fileData);
       const len = binaryString.length;
       const bytes = new Uint8Array(len);
       for (let i = 0; i < len; i++) {
@@ -164,7 +190,7 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
 
   // If it's a text-based file, decode it and send as text
   if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json' || file.mimeType.includes('csv')) {
-    const textContent = decodeBase64ToText(file.data);
+    const textContent = decodeBase64ToText(fileData);
     if (textContent) {
       file.extractedText = textContent; // Cache it
       return { text: `[Document: ${file.name}]\n${textContent}` };
@@ -176,7 +202,7 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
   try {
     console.log(`Uploading ${file.name} to Gemini File API for caching...`);
     // Convert base64 back to Blob efficiently using fetch
-    const base64Response = await fetch(`data:${file.mimeType};base64,${file.data}`);
+    const base64Response = await fetch(`data:${file.mimeType};base64,${fileData}`);
     const blob = await base64Response.blob();
     
     const uploadRes = await ai.files.upload({ file: blob as any, mimeType: file.mimeType });
@@ -195,7 +221,7 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
     return {
       inlineData: {
         mimeType: file.mimeType,
-        data: file.data
+        data: fileData
       }
     };
   }

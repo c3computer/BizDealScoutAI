@@ -142,10 +142,20 @@ const App: React.FC = () => {
 
   // Auto-save extra data (files and chat) when they change
   useEffect(() => {
-    if (currentCacheId) {
-      dataService.saveDealExtraData(currentCacheId, deal.files, chatMessages).catch(console.error);
+    if (currentCacheId && user) {
+      dataService.saveDealExtraData(user.id, currentCacheId, deal.files, chatMessages)
+        .then(updatedFiles => {
+          if (updatedFiles && updatedFiles !== deal.files) {
+            // Only update if files actually changed to avoid infinite loop
+            const hasChanges = updatedFiles.some((f, i) => f.downloadUrl !== deal.files[i]?.downloadUrl);
+            if (hasChanges) {
+              setDeal(prev => ({ ...prev, files: updatedFiles }));
+            }
+          }
+        })
+        .catch(console.error);
     }
-  }, [deal.files, chatMessages, currentCacheId]);
+  }, [deal.files, chatMessages, currentCacheId, user]);
 
   // Calculated Metrics
   const metrics: CalculatedMetrics = useMemo(() => {
@@ -188,7 +198,7 @@ const App: React.FC = () => {
           
           let extraFiles: DealFile[] = [];
           let extraChat: ChatMessage[] = [];
-          const extraData = await dataService.getDealExtraData(cached.id);
+          const extraData = user ? await dataService.getDealExtraData(user.id, cached.id) : undefined;
           if (extraData) {
             if (extraData.files) extraFiles = extraData.files;
             if (extraData.chatMessages) extraChat = extraData.chatMessages;
@@ -306,7 +316,12 @@ const App: React.FC = () => {
       if (deal.listingUrl) {
         const entry = dataService.saveToGlobalCache(deal.listingUrl, deal, response, metrics, currentCacheId || undefined);
         setCurrentCacheId(entry.id);
-        await dataService.saveDealExtraData(entry.id, deal.files, chatMessages);
+        if (user) {
+          const updatedFiles = await dataService.saveDealExtraData(user.id, entry.id, deal.files, chatMessages);
+          if (updatedFiles) {
+            setDeal(prev => ({ ...prev, files: updatedFiles }));
+          }
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -488,10 +503,13 @@ const App: React.FC = () => {
     const effectiveCacheId = entry.id;
     
     if (effectiveCacheId) {
-      dataService.saveUserDeal(user.id, effectiveCacheId, deal.notes, crm);
+      await dataService.saveUserDeal(user.id, effectiveCacheId, deal.notes, crm, deal, result || { markdown: '', groundingUrls: [] }, metrics);
       
-      // Save extra data (files and chat messages) to IndexedDB
-      await dataService.saveDealExtraData(effectiveCacheId, deal.files, chatMessages);
+      // Save extra data (files and chat messages) to Firestore
+      const updatedFiles = await dataService.saveDealExtraData(user.id, effectiveCacheId, deal.files, chatMessages);
+      if (updatedFiles) {
+        setDeal(prev => ({ ...prev, files: updatedFiles }));
+      }
       
       // Trigger Cloud Sync
       await syncData();
@@ -504,7 +522,7 @@ const App: React.FC = () => {
   const handleCrmChange = async (newCrm: CrmData) => {
     setCrm(newCrm);
     if (user && currentCacheId) {
-      dataService.saveUserDeal(user.id, currentCacheId, deal.notes, newCrm);
+      await dataService.saveUserDeal(user.id, currentCacheId, deal.notes, newCrm, deal, result || { markdown: '', groundingUrls: [] }, metrics);
       // Fire and forget sync to avoid UI blocking
       syncData().catch(console.error);
     }
@@ -594,7 +612,7 @@ const App: React.FC = () => {
     setCrm(saved.crm || defaultCrm());
 
     // Load extra data (files and chat messages)
-    const extraData = await dataService.getDealExtraData(saved.cache.id);
+    const extraData = user ? await dataService.getDealExtraData(user.id, saved.cache.id) : undefined;
     if (extraData) {
       if (extraData.files) {
         setDeal(prev => ({ ...prev, files: extraData.files }));
@@ -611,14 +629,15 @@ const App: React.FC = () => {
     const dealId = params.get('dealId');
     
     if (dealId && user) {
-      const userDeals = dataService.getUserDeals(user.id);
-      const savedDeal = userDeals.find(d => d.id === dealId);
-      
-      if (savedDeal) {
-        loadFromHistory(savedDeal);
-        // Clear the URL parameter so it doesn't reload on refresh
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
+      dataService.getUserDeals(user.id).then(userDeals => {
+        const savedDeal = userDeals.find(d => d.id === dealId);
+        
+        if (savedDeal) {
+          loadFromHistory(savedDeal);
+          // Clear the URL parameter so it doesn't reload on refresh
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      });
     }
   }, [user]);
 
@@ -717,14 +736,14 @@ const App: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-4 mt-4 md:mt-0">
+        <div className="flex flex-wrap items-center gap-4 mt-4 md:mt-0 w-full md:w-auto justify-start md:justify-end">
           <div className="px-4 py-2 bg-slate-800 rounded border border-slate-700 flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Gemini 3.1 Pro Active</span>
           </div>
 
           {user ? (
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                {isSyncing ? (
                    <div className="text-xs font-bold text-amber-400 uppercase animate-pulse mr-2 flex items-center">
                         <svg className="w-3 h-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -769,13 +788,13 @@ const App: React.FC = () => {
                </button>
                <button 
                 onClick={logout}
-                className="text-slate-500 hover:text-red-400 text-xs font-bold uppercase tracking-wider"
+                className="text-slate-500 hover:text-red-400 text-xs font-bold uppercase tracking-wider ml-auto sm:ml-0"
                >
                  Logout
                </button>
             </div>
           ) : (
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-3">
                {syncError && (
                    <div className="text-xs font-bold text-red-400 uppercase mr-2 bg-red-900/20 px-2 py-1 rounded border border-red-900/50 max-w-[200px] truncate" title={syncError}>
                        {syncError}

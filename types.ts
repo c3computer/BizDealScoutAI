@@ -7,7 +7,9 @@ export interface InvestorProfile {
 export interface DealFile {
   name: string;
   mimeType: string;
-  data: string; // Base64 string
+  data?: string; // Base64 string (optional now, used for temporary upload)
+  downloadUrl?: string; // URL from Firebase Storage
+  storagePath?: string; // Path in Firebase Storage
   geminiFileUri?: string; // Cached URI from Gemini File API
   extractedText?: string; // Cached text extraction
 }

@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user data and investor profile.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "picture": { "type": "string", "format": "uri" },
+        "profile": {
+          "type": "object",
+          "properties": {
+            "goals": { "type": "string" },
+            "mustHaves": { "type": "string" },
+            "superpowers": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "name", "createdAt"]
+    },
+    "Deal": {
+      "title": "Deal",
+      "description": "Stores a saved deal and its analysis.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "dealData": {
+          "type": "object",
+          "properties": {
+            "listingUrl": { "type": "string" },
+            "askingPrice": { "type": "number" },
+            "revenue": { "type": "number" },
+            "sde": { "type": "number" },
+            "keywords": { "type": "string" },
+            "notes": { "type": "string" },
+            "growthContext": { "type": "string" },
+            "imageUrl": { "type": "string" },
+            "hasFinancials": { "type": "boolean" },
+            "callParticipants": { "type": "string" },
+            "callSummary": { "type": "string" }
+          }
+        },
+        "analysis": {
+          "type": "object",
+          "properties": {
+            "markdown": { "type": "string" },
+            "score": { "type": "number" },
+            "initialScore": { "type": "number" }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "multiple": { "type": "number" },
+            "margin": { "type": "number" },
+            "status": { "type": "string" }
+          }
+        },
+        "crm": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string" },
+            "financialsRequested": { "type": "boolean" },
+            "ndaSigned": { "type": "boolean" },
+            "pofSent": { "type": "boolean" },
+            "cimReceived": { "type": "boolean" },
+            "brokerCall": { "type": "boolean" },
+            "sellerCall": { "type": "boolean" },
+            "offerMade": { "type": "boolean" },
+            "loiSent": { "type": "boolean" },
+            "dueDiligence": { "type": "boolean" }
+          }
+        },
+        "personalNotes": { "type": "string" },
+        "savedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "url", "savedAt"]
+    },
+    "Chat": {
+      "title": "Chat Message",
+      "description": "Stores a chat message related to a deal.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dealId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "dealId", "role", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profiles."
+    },
+    "/users/{userId}/deals/{dealId}": {
+      "schema": { "$ref": "#/entities/Deal" },
+      "description": "User's saved deals."
+    },
+    "/users/{userId}/deals/{dealId}/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Chat messages for a deal."
+    }
+  }
+}

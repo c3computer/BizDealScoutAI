@@ -80,9 +80,9 @@ export const UserDashboard: React.FC = () => {
   const [importProgress, setImportProgress] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchDeals = () => {
+  const fetchDeals = async () => {
     if (user) {
-      const userDeals = dataService.getUserDeals(user.id);
+      const userDeals = await dataService.getUserDeals(user.id);
       setDeals(userDeals);
     }
   };
@@ -154,7 +154,7 @@ export const UserDashboard: React.FC = () => {
             metrics
           );
           
-          dataService.saveUserDeal(user.id, entry.id, dealData.notes, d.crm || undefined);
+          await dataService.saveUserDeal(user.id, entry.id, dealData.notes, d.crm || undefined, dealData, analysisResult, metrics);
         }
         
         setImportProgress("Refreshing dashboard...");

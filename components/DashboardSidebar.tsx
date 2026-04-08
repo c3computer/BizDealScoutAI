@@ -15,13 +15,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ isOpen, onCl
 
   // Refresh deals when sidebar opens
   useEffect(() => {
-    if (isOpen && user) {
-      const history = dataService.getUserDeals(user.id);
-      setDeals(history);
-      
-      // Auto-sync existing deals to the new Admin Dashboard backend
-      dataService.syncAllDealsToAdmin(user.id);
-    }
+    const fetchDeals = async () => {
+      if (isOpen && user) {
+        const history = await dataService.getUserDeals(user.id);
+        setDeals(history);
+      }
+    };
+    fetchDeals();
   }, [isOpen, user]);
 
   if (!isOpen) return null;
