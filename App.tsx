@@ -508,19 +508,24 @@ const App: React.FC = () => {
     const effectiveCacheId = entry.id;
     
     if (effectiveCacheId) {
-      await dataService.saveUserDeal(user.id, effectiveCacheId, deal.notes, crm, deal, result || { markdown: '', groundingUrls: [] }, metrics);
-      
-      // Save extra data (files and chat messages) to Firestore
-      const updatedFiles = await dataService.saveDealExtraData(user.id, effectiveCacheId, deal.files, chatMessages);
-      if (updatedFiles) {
-        setDeal(prev => ({ ...prev, files: updatedFiles }));
-      }
-      
-      // Trigger Cloud Sync
-      await syncData();
+      try {
+        await dataService.saveUserDeal(user.id, effectiveCacheId, deal.notes, crm, deal, result || { markdown: '', groundingUrls: [] }, metrics);
+        
+        // Save extra data (files and chat messages) to Firestore
+        const updatedFiles = await dataService.saveDealExtraData(user.id, effectiveCacheId, deal.files, chatMessages);
+        if (updatedFiles) {
+          setDeal(prev => ({ ...prev, files: updatedFiles }));
+        }
+        
+        // Trigger Cloud Sync
+        await syncData();
 
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } catch (err) {
+        console.error("Failed to save deal:", err);
+        alert("Failed to save deal. Please try again.");
+      }
     }
   };
 

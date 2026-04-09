@@ -96,7 +96,7 @@ service cloud.firestore {
       let data = request.resource.data;
       return hasRequiredFields(['userId', 'url', 'savedAt', 'updatedAt']) &&
              data.userId == userId &&
-             isValidUrl(data.url) &&
+             (isValidUrl(data.url) || data.url.matches("^manual-.*") || data.url == "") &&
              data.url.size() < 1000 &&
              (!('dealData' in data) || data.dealData is map) &&
              (!('analysis' in data) || data.analysis is map) &&

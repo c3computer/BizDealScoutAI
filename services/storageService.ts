@@ -7,6 +7,29 @@ import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storag
 const generateId = () => Math.random().toString(36).substr(2, 9);
 const normalizeUrl = (url: string) => url.trim().toLowerCase().replace(/\/$/, "");
 
+// Helper to remove undefined values recursively as Firestore doesn't support them
+const removeUndefined = (obj: any): any => {
+  if (obj === null || obj === undefined) {
+    return null;
+  }
+  if (obj instanceof Date) {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefined);
+  }
+  if (typeof obj === 'object') {
+    const newObj: any = {};
+    for (const key in obj) {
+      if (obj[key] !== undefined) {
+        newObj[key] = removeUndefined(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+};
+
 export const defaultCrm = (): CrmData => ({
   status: 'Lead',
   financialsRequested: false,
@@ -59,9 +82,9 @@ export const dataService = {
           
           const downloadUrl = await getDownloadURL(storageRef);
           
+          const { data, ...fileWithoutData } = file;
           return {
-            ...file,
-            data: undefined, // Remove base64 data to save space in Firestore
+            ...fileWithoutData,
             storagePath,
             downloadUrl
           };
@@ -264,7 +287,7 @@ export const dataService = {
 
       const dealRef = doc(db, `users/${userId}/deals/${cacheId}`);
       
-      const dealPayload = {
+      const dealPayload = removeUndefined({
         userId,
         url,
         dealData: cleanDealData,
@@ -274,7 +297,7 @@ export const dataService = {
         personalNotes: personalNotes || '',
         savedAt: new Date(),
         updatedAt: new Date()
-      };
+      });
 
       await setDoc(dealRef, dealPayload, { merge: true });
 
