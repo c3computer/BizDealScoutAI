@@ -117,9 +117,50 @@ service cloud.firestore {
              data.timestamp is timestamp;
     }
 
+    function isValidLoiTracking() {
+      let data = request.resource.data;
+      return hasRequiredFields(['userId', 'dealId', 'pdfUrl', 'sellerName', 'sentAt', 'opens', 'views']) &&
+             data.userId is string &&
+             data.dealId is string &&
+             data.pdfUrl is string && data.pdfUrl.size() < 2000 &&
+             data.sellerName is string && data.sellerName.size() < 200 &&
+             data.sentAt is timestamp &&
+             data.opens is number && data.opens >= 0 &&
+             data.views is number && data.views >= 0 &&
+             (!('lastOpenedAt' in data) || data.lastOpenedAt is timestamp) &&
+             (!('lastViewedAt' in data) || data.lastViewedAt is timestamp) &&
+             (!('followUp1Sent' in data) || data.followUp1Sent is bool) &&
+             (!('followUp3Sent' in data) || data.followUp3Sent is bool) &&
+             (!('followUp7Sent' in data) || data.followUp7Sent is bool);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
+
+    match /loi_tracking/{loiId} {
+      // Anyone can read if they have the ID
+      allow read: if true;
+      // Only the owner can create
+      allow create: if isOwner(request.resource.data.userId) && isValidLoiTracking();
+      // Anyone can update to increment views/opens, but only the owner can change other fields
+      allow update: if isValidLoiTracking() && 
+                    request.resource.data.userId == resource.data.userId &&
+                    request.resource.data.dealId == resource.data.dealId &&
+                    request.resource.data.pdfUrl == resource.data.pdfUrl &&
+                    request.resource.data.sellerName == resource.data.sellerName &&
+                    request.resource.data.sentAt == resource.data.sentAt &&
+                    (
+                      isOwner(resource.data.userId) || 
+                      (
+                        // Unauthenticated users can only increment opens/views and update timestamps
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['opens', 'views', 'lastOpenedAt', 'lastViewedAt']) &&
+                        request.resource.data.opens >= resource.data.opens &&
+                        request.resource.data.views >= resource.data.views
+                      )
+                    );
+      allow delete: if isOwner(resource.data.userId);
+    }
 
     match /users/{userId} {
       allow read: if isOwner(userId);

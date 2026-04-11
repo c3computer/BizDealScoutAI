@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { openSignService } from '../services/openSignService';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc, setDoc } from 'firebase/firestore';
+import { storage, db } from '../firebase';
 import { LOITerms } from '../types';
 
 interface LOIData {
@@ -20,9 +22,11 @@ interface LOIWalkthroughModalProps {
   onClose: () => void;
   initialData: LOIData;
   loiTerms: LOITerms | null;
+  userId?: string;
+  dealId?: string;
 }
 
-export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen, onClose, initialData, loiTerms }) => {
+export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen, onClose, initialData, loiTerms, userId, dealId }) => {
   const [step, setStep] = useState(1);
   const [buyerName, setBuyerName] = useState('');
   const [businessDescription, setBusinessDescription] = useState('');
@@ -47,6 +51,7 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
   const [isGenerating, setIsGenerating] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [trackedLink, setTrackedLink] = useState<string | null>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -114,10 +119,17 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
     }
   };
 
-  const handleSendViaOpenSign = async () => {
+  const handleGenerateTrackedLink = async () => {
+    if (!userId || !dealId) {
+      setErrorMessage("Please save the deal to history first before generating a tracked link.");
+      return;
+    }
+
     setIsGenerating(true);
     setErrorMessage(null);
     setSuccessMessage(null);
+    setTrackedLink(null);
+
     try {
       const file = await generatePDF();
       if (!file) {
@@ -126,33 +138,30 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
         return;
       }
 
-      const signers = [];
-      if (initialData.brokerName && initialData.brokerEmail) {
-        signers.push({ name: initialData.brokerName, email: initialData.brokerEmail });
-      }
-      if (initialData.sellerName && initialData.sellerEmail) {
-        signers.push({ name: initialData.sellerName, email: initialData.sellerEmail });
-      }
+      // Upload to Firebase Storage
+      const loiId = Math.random().toString(36).substr(2, 9);
+      const storageRef = ref(storage, `users/${userId}/deals/${dealId}/loi/${loiId}.pdf`);
+      await uploadBytes(storageRef, file);
+      const pdfUrl = await getDownloadURL(storageRef);
 
-      if (signers.length === 0) {
-        setErrorMessage("No valid signers (Broker or Seller) provided with email addresses.");
-        setIsGenerating(false);
-        return;
-      }
-
-      const result = await openSignService.sendDocumentForSignature({
-        file,
-        title: `Letter of Intent - ${initialData.sellerName}`,
-        signers
+      // Create tracking document
+      const trackingRef = doc(db, 'loi_tracking', loiId);
+      await setDoc(trackingRef, {
+        userId,
+        dealId,
+        pdfUrl,
+        sellerName: initialData.sellerName || 'Unknown Seller',
+        sentAt: new Date(),
+        opens: 0,
+        views: 0
       });
 
-      if (result.success) {
-        setSuccessMessage(result.message);
-      } else {
-        setErrorMessage(result.message);
-      }
+      const link = `${window.location.origin}/?loi=${loiId}`;
+      setTrackedLink(link);
+      setSuccessMessage("Tracked link generated successfully! You can now copy and send this link.");
     } catch (error) {
-      setErrorMessage("An unexpected error occurred while sending.");
+      console.error("Error generating tracked link:", error);
+      setErrorMessage("An unexpected error occurred while generating the link.");
     } finally {
       setIsGenerating(false);
     }
@@ -241,24 +250,50 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
           {step === 4 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
               <h3 className="text-lg font-bold text-amber-400 mb-4">Step 4: Review & Generate</h3>
-              <p className="text-slate-300 text-sm">You have completed the walkthrough. You can now download the filled LOI as a PDF or send it directly to the broker/seller via OpenSign.</p>
+              <p className="text-slate-300 text-sm">You have completed the walkthrough. You can now download the filled LOI as a PDF or generate a tracked link to send via email.</p>
               
-              <div className="flex flex-col space-y-3 mt-6">
-                <button
-                  onClick={handleDownload}
-                  disabled={isGenerating}
-                  className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center"
-                >
-                  {isGenerating ? 'Generating...' : 'Download PDF'}
-                </button>
-                <button
-                  onClick={handleSendViaOpenSign}
-                  disabled={isGenerating}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center"
-                >
-                  {isGenerating ? 'Sending...' : 'Send via OpenSign'}
-                </button>
-              </div>
+              {trackedLink ? (
+                <div className="mt-6 p-4 bg-slate-800 border border-emerald-500/30 rounded-lg">
+                  <p className="text-sm text-slate-300 mb-2">Your tracked link is ready:</p>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={trackedLink} 
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-emerald-400 text-sm focus:outline-none"
+                    />
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(trackedLink);
+                        alert("Link copied to clipboard!");
+                      }}
+                      className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded text-sm transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-3">
+                    Send this link to the broker or seller. When they open it, you'll be able to track their engagement in the LOI Dash Cam.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col space-y-3 mt-6">
+                  <button
+                    onClick={handleDownload}
+                    disabled={isGenerating}
+                    className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center"
+                  >
+                    {isGenerating ? 'Generating...' : 'Download PDF'}
+                  </button>
+                  <button
+                    onClick={handleGenerateTrackedLink}
+                    disabled={isGenerating}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center"
+                  >
+                    {isGenerating ? 'Generating...' : 'Generate Tracked Link'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

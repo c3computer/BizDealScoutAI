@@ -28,6 +28,7 @@ import { DashboardSidebar } from './components/DashboardSidebar';
 import { CrmTracker } from './components/CrmTracker';
 import { PlaybookGenerator } from './components/PlaybookGenerator';
 import { OnboardingDeck } from './components/OnboardingDeck';
+import { LOIViewer } from './components/LOIViewer';
 
 const App: React.FC = () => {
   const { user, logout, updateUserProfile, syncData, isSyncing, syncError } = useAuth();
@@ -71,6 +72,14 @@ const App: React.FC = () => {
   const [playbookModalOpen, setPlaybookModalOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(true); // Assume true initially to avoid flicker
+
+  // Check for LOI Viewer Route
+  const urlParams = new URLSearchParams(window.location.search);
+  const loiIdParam = urlParams.get('loi');
+  
+  if (loiIdParam) {
+    return <LOIViewer loiId={loiIdParam} />;
+  }
 
   // Check for API Key
   useEffect(() => {
@@ -1199,7 +1208,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Card 4: Create LOI & Send to Broker */}
-          <CreateLOIBox loiTerms={loiTerms} />
+          <CreateLOIBox loiTerms={loiTerms} userId={user?.id} dealId={currentCacheId || undefined} />
 
           {/* Card 5: Capital Raising & Deal Terms */}
           <CapitalRaisingBox profile={profile} deal={deal} analysis={result} />

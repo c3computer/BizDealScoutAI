@@ -81,6 +81,22 @@ export interface CachedDealEntry {
 
 export type DealStatus = 'Lead' | 'Engaged' | 'Offer Made' | 'LOI Sent' | 'Due Diligence' | 'Accepted' | 'Rejected';
 
+export interface LOITrackingData {
+  id: string;
+  dealId: string;
+  userId: string;
+  pdfUrl: string;
+  sellerName: string;
+  sentAt: number;
+  opens: number;
+  views: number;
+  lastOpenedAt?: number;
+  lastViewedAt?: number;
+  followUp1Sent?: boolean;
+  followUp3Sent?: boolean;
+  followUp7Sent?: boolean;
+}
+
 export interface CrmData {
   status: DealStatus;
   financialsRequested: boolean;

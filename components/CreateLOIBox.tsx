@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 import { LOIWalkthroughModal } from './LOIWalkthroughModal';
-import { LOITerms } from '../types';
+import { LOITerms, LOITrackingData } from '../types';
 
 interface CreateLOIBoxProps {
   loiTerms: LOITerms | null;
+  userId?: string;
+  dealId?: string;
 }
 
-export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms }) => {
+export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, dealId }) => {
   const [logo, setLogo] = useState<string | undefined>(undefined);
   const [businessAddress, setBusinessAddress] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
@@ -18,6 +22,30 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms }) => {
   const [brokerEmail, setBrokerEmail] = useState('');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [trackingData, setTrackingData] = useState<LOITrackingData[]>([]);
+
+  useEffect(() => {
+    if (!userId || !dealId) return;
+
+    const q = query(
+      collection(db, 'loi_tracking'),
+      where('dealId', '==', dealId),
+      where('userId', '==', userId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as LOITrackingData[];
+      
+      // Sort by sentAt descending
+      data.sort((a, b) => b.sentAt - a.sentAt);
+      setTrackingData(data);
+    });
+
+    return () => unsubscribe();
+  }, [userId, dealId]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -39,6 +67,13 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms }) => {
     setIsModalOpen(true);
   };
 
+  const getTimestamp = (val: any) => {
+    if (!val) return Date.now();
+    if (val.toMillis) return val.toMillis();
+    if (val.seconds) return val.seconds * 1000;
+    return val;
+  };
+
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-xl overflow-hidden relative group flex flex-col">
       <div className="absolute top-0 left-0 w-1 h-full bg-slate-600 group-hover:bg-emerald-400 transition-colors"></div>
@@ -50,9 +85,39 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms }) => {
           Create LOI & Send
         </h2>
         <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-1 rounded uppercase tracking-wider">
-          OpenSign Integration
+          Tracked PDF
         </span>
       </div>
+
+      {/* LOI Dash Cam */}
+      {trackingData.length > 0 && (
+        <div className="bg-slate-900 border-b border-slate-700 p-4">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse mr-2"></span>
+            LOI Dash Cam
+          </h3>
+          <div className="space-y-3">
+            {trackingData.map(track => (
+              <div key={track.id} className="bg-slate-800 rounded border border-slate-700 p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-white">{track.sellerName}</p>
+                  <p className="text-xs text-slate-400">Sent: {new Date(getTimestamp(track.sentAt)).toLocaleString()}</p>
+                </div>
+                <div className="flex space-x-4 text-center">
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase">Opens</p>
+                    <p className={`text-lg font-bold ${track.opens > 0 ? 'text-emerald-400' : 'text-slate-300'}`}>{track.opens}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase">Views</p>
+                    <p className={`text-lg font-bold ${track.views > 0 ? 'text-amber-400' : 'text-slate-300'}`}>{track.views}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="p-4 space-y-4">
         <form onSubmit={handleStartWalkthrough} className="space-y-4">
@@ -172,6 +237,8 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms }) => {
       <LOIWalkthroughModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        userId={userId}
+        dealId={dealId}
         initialData={{
           logo,
           businessAddress,
