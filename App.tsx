@@ -409,16 +409,17 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveLOITerms = async () => {
-    if (chatMessages.length === 0) return;
+  const handleSaveLOITerms = async (): Promise<boolean> => {
+    if (chatMessages.length === 0) return false;
     setIsExtractingTerms(true);
     try {
       const { extractLOITerms } = await import('./services/geminiService');
       const terms = await extractLOITerms(chatMessages);
       setLoiTerms(terms);
-      alert("Terms successfully saved for your LOI!");
+      return true;
     } catch (err) {
-      alert("Failed to extract terms. Please make sure you've discussed terms in the chat.");
+      console.error("Failed to extract terms:", err);
+      return false;
     } finally {
       setIsExtractingTerms(false);
     }
@@ -1183,7 +1184,14 @@ const App: React.FC = () => {
                      </button>
                      <div className="flex space-x-4">
                        <button
-                          onClick={handleSaveLOITerms}
+                          onClick={async () => {
+                            const success = await handleSaveLOITerms();
+                            if (success) {
+                              alert("Terms successfully saved for your LOI!");
+                            } else {
+                              alert("Failed to extract terms. Please make sure you've discussed terms in the chat.");
+                            }
+                          }}
                           disabled={chatMessages.length === 0 || isExtractingTerms}
                           className="text-xs flex items-center space-x-1 text-emerald-400 hover:text-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                        >
@@ -1208,7 +1216,12 @@ const App: React.FC = () => {
           </div>
 
           {/* Card 4: Create LOI & Send to Broker */}
-          <CreateLOIBox loiTerms={loiTerms} userId={user?.id} dealId={currentCacheId || undefined} />
+          <CreateLOIBox 
+            loiTerms={loiTerms} 
+            userId={user?.id} 
+            dealId={currentCacheId || undefined} 
+            onExtractTerms={handleSaveLOITerms}
+          />
 
           {/* Card 5: Capital Raising & Deal Terms */}
           <CapitalRaisingBox profile={profile} deal={deal} analysis={result} />

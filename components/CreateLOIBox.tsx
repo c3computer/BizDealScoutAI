@@ -8,9 +8,10 @@ interface CreateLOIBoxProps {
   loiTerms: LOITerms | null;
   userId?: string;
   dealId?: string;
+  onExtractTerms: () => Promise<boolean>;
 }
 
-export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, dealId }) => {
+export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, dealId, onExtractTerms }) => {
   const [logo, setLogo] = useState<string | undefined>(undefined);
   const [businessAddress, setBusinessAddress] = useState('');
   const [businessPhone, setBusinessPhone] = useState('');
@@ -23,6 +24,8 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [trackingData, setTrackingData] = useState<LOITrackingData[]>([]);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
 
   useEffect(() => {
     if (!userId || !dealId) return;
@@ -58,12 +61,26 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
     }
   };
 
-  const handleStartWalkthrough = (e: React.FormEvent) => {
+  const handleStartWalkthrough = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loiTerms) {
-      alert("Terms are not Set. Please set terms in the Acquisition Edge Chat first.");
+    setValidationError(null);
+
+    if (!sellerName || !brokerName || !brokerEmail) {
+      setValidationError("Please fill out all required fields (Seller Name, Broker Name, Broker Email).");
       return;
     }
+
+    if (!loiTerms) {
+      setIsExtracting(true);
+      const success = await onExtractTerms();
+      setIsExtracting(false);
+      
+      if (!success) {
+        setValidationError("Could not find LOI terms in the chat. Please discuss terms (price, earnest money, etc.) in the chat first.");
+        return;
+      }
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -174,7 +191,6 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
                 onChange={(e) => setSellerName(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400 transition-colors"
                 placeholder="Jane Smith"
-                required
               />
             </div>
             <div>
@@ -203,7 +219,6 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
                 onChange={(e) => setBrokerName(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400 transition-colors"
                 placeholder="John Doe"
-                required
               />
             </div>
             <div>
@@ -216,20 +231,38 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
                 onChange={(e) => setBrokerEmail(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400 transition-colors"
                 placeholder="broker@example.com"
-                required
               />
             </div>
           </div>
 
+          {validationError && (
+            <div className="bg-rose-500/20 border border-rose-500 text-rose-300 px-4 py-3 rounded text-sm mb-4">
+              {validationError}
+            </div>
+          )}
+
+          {isExtracting && (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-emerald-400 mb-1">
+                <span>Extracting terms from chat...</span>
+                <span className="animate-pulse">Processing</span>
+              </div>
+              <div className="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden relative">
+                <div className="absolute top-0 left-0 h-full bg-emerald-500 rounded-full w-full animate-pulse"></div>
+              </div>
+            </div>
+          )}
+
           <button
-            type="submit"
-            disabled={!sellerName || !brokerName || !brokerEmail}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-4"
+            type="button"
+            onClick={handleStartWalkthrough}
+            disabled={isExtracting}
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
             </svg>
-            Start LOI Walkthrough
+            {isExtracting ? 'Extracting Terms...' : 'Start LOI Walkthrough'}
           </button>
         </form>
       </div>
