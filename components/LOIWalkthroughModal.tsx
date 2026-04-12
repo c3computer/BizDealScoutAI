@@ -64,17 +64,12 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
     if (!printRef.current) return null;
     
     try {
-      // Temporarily make it visible for html2canvas
-      printRef.current.style.display = 'block';
-      
       const canvas = await html2canvas(printRef.current, {
         scale: 2,
         useCORS: true,
         logging: false
       });
       
-      printRef.current.style.display = 'none';
-
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -318,7 +313,7 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
       </div>
 
       {/* Hidden Printable LOI Template */}
-      <div style={{ display: 'none' }}>
+      <div className="absolute top-[-9999px] left-[-9999px]">
         <div ref={printRef} className="bg-white text-black p-12 w-[210mm] min-h-[297mm] font-serif text-[11pt] leading-relaxed">
           {/* Header */}
           <div className="flex justify-between items-start mb-8">
