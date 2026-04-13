@@ -264,6 +264,24 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
             </svg>
             {isExtracting ? 'Extracting Terms...' : 'Start LOI Walkthrough'}
           </button>
+
+          <div className="mt-4 text-center">
+            {trackingData.length > 0 ? (
+              <a href={`/?loi=${trackingData[0].id}`} target="_blank" rel="noreferrer" className="text-emerald-400 hover:text-emerald-300 hover:underline text-sm font-medium transition-colors flex items-center justify-center">
+                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                Trackable link to LOI ({trackingData[0].sellerName})
+              </a>
+            ) : (
+              <span className="text-slate-500 text-sm italic flex items-center justify-center">
+                <svg className="w-4 h-4 mr-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                Trackable link to LOI
+              </span>
+            )}
+          </div>
         </form>
       </div>
 

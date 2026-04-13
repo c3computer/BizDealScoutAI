@@ -70,17 +70,32 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
         logging: false
       });
       
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error(`Canvas dimensions are invalid: ${canvas.width}x${canvas.height}`);
+      }
+
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
+        unit: 'pt',
+        format: 'letter'
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
 
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = position - pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
       
       const pdfBlob = pdf.output('blob');
       return new File([pdfBlob], `LOI_${initialData.sellerName.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
@@ -133,10 +148,17 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
         return;
       }
 
-      // Upload to Firebase Storage
+      // Upload to Firebase Storage with timeout
       const loiId = Math.random().toString(36).substr(2, 9);
       const storageRef = ref(storage, `users/${userId}/deals/${dealId}/loi/${loiId}.pdf`);
-      await uploadBytes(storageRef, file);
+      
+      const uploadPromise = uploadBytes(storageRef, file);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error("Upload timed out. Please check your connection or Firebase Storage rules.")), 15000)
+      );
+      
+      await Promise.race([uploadPromise, timeoutPromise]);
+      
       const pdfUrl = await getDownloadURL(storageRef);
 
       // Create tracking document
@@ -313,20 +335,20 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
       </div>
 
       {/* Hidden Printable LOI Template */}
-      <div className="absolute top-[-9999px] left-[-9999px]">
-        <div ref={printRef} className="bg-white text-black p-12 w-[210mm] min-h-[297mm] font-serif text-[11pt] leading-relaxed">
+      <div className="fixed top-0 left-0 z-[-1] opacity-0 pointer-events-none">
+        <div ref={printRef} className="bg-white text-black w-[8.5in] px-[1in] py-[1in] font-serif text-[11pt] leading-relaxed box-border shadow-none">
           {/* Header */}
-          <div className="flex justify-between items-start mb-8">
+          <div className="flex justify-between items-start mb-10 border-b-2 border-gray-800 pb-6">
             <div className="w-1/2">
               {initialData.logo ? (
-                <img src={initialData.logo} alt="Logo" className="max-h-20 object-contain" />
+                <img src={initialData.logo} alt="Logo" className="max-h-16 object-contain" />
               ) : (
-                <div className="h-20 w-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm italic border border-gray-200">
-                  [Company Logo]
+                <div className="h-16 w-48 bg-gray-50 flex items-center justify-center text-gray-400 text-sm font-sans tracking-widest uppercase border border-gray-200">
+                  {buyerName || 'COMPANY LOGO'}
                 </div>
               )}
             </div>
-            <div className="w-1/2 text-right text-sm">
+            <div className="w-1/2 text-right text-sm text-gray-600 font-sans">
               <p>{initialData.businessAddress || '[Business Address]'}</p>
               <p>{initialData.businessPhone || '[Business Phone]'}</p>
               <p>{initialData.businessEmail || '[Business Email]'}</p>
@@ -334,68 +356,82 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
           </div>
 
           {/* Date & Addressee */}
-          <div className="mb-8">
-            <p className="mb-4"><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
+          <div className="mb-10 text-gray-800">
+            <p className="mb-6"><strong>Date:</strong> {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             <p><strong>To:</strong> {initialData.sellerName || '[Seller Name]'}</p>
             {initialData.brokerName && <p><strong>CC:</strong> {initialData.brokerName} (Broker)</p>}
           </div>
 
           {/* Subject */}
-          <div className="mb-8 font-bold text-center uppercase underline">
+          <div className="mb-10 font-bold text-center uppercase tracking-wider text-lg">
             LETTER OF INTENT TO PURCHASE {businessDescription ? businessDescription.toUpperCase() : '[BUSINESS DESCRIPTION]'}
           </div>
 
           {/* Body */}
-          <div className="space-y-4">
+          <div className="space-y-6 text-justify text-gray-800">
             <p>Dear {initialData.sellerName || '[Seller Name]'},</p>
             <p>
-              This Letter of Intent ("LOI") sets forth the preliminary terms and conditions under which {buyerName || '[Buyer Name]'} ("Buyer") intends to acquire the assets and business operations of {businessDescription || '[Business Description]'} ("Business") from {initialData.sellerName || '[Seller Name]'} ("Seller").
+              This Letter of Intent ("LOI") sets forth the preliminary terms and conditions under which <strong>{buyerName || '[Buyer Name]'}</strong> ("Buyer") intends to acquire the assets and business operations of <strong>{businessDescription || '[Business Description]'}</strong> ("Business") from <strong>{initialData.sellerName || '[Seller Name]'}</strong> ("Seller").
             </p>
             
-            <h4 className="font-bold mt-6 mb-2">1. Purchase Price</h4>
-            <p>
-              The total purchase price for the Business shall be ${purchasePrice || '[Purchase Price]'}, subject to customary adjustments.
+            <div>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">1. Purchase Price</h4>
+              <p>
+                The total purchase price for the Business shall be <strong>${purchasePrice || '[Purchase Price]'}</strong>, subject to customary adjustments.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">2. Earnest Money Deposit</h4>
+              <p>
+                Upon execution of a definitive Purchase Agreement, Buyer shall deposit <strong>${earnestMoney || '[Earnest Money]'}</strong> into escrow as an earnest money deposit.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">3. Due Diligence</h4>
+              <p>
+                Buyer shall have a period of <strong>{dueDiligenceDays || '[X]'} days</strong> following the execution of this LOI to conduct legal, financial, and operational due diligence.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">4. Closing Date</h4>
+              <p>
+                The parties anticipate closing the transaction on or before <strong>{closingDate || '[Closing Date]'}</strong>, subject to the satisfaction of all closing conditions.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">5. Transition and Training</h4>
+              <p>
+                Seller agrees to provide training and transition assistance to Buyer for a period of <strong>{trainingPeriod || '[Training Period]'}</strong> following the closing at no additional cost.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">6. Non-Compete Agreement</h4>
+              <p>
+                Seller agrees not to compete with the Business within a reasonable geographic radius for a period of <strong>{nonCompetePeriod || '[Non-Compete Period]'}</strong> following the closing.
+              </p>
+            </div>
+
+            <p className="mt-10 italic text-gray-600">
+              This LOI is non-binding and is intended solely as a basis for further negotiations. It does not constitute a legally binding agreement to purchase or sell the Business.
             </p>
 
-            <h4 className="font-bold mt-6 mb-2">2. Earnest Money Deposit</h4>
-            <p>
-              Upon execution of a definitive Purchase Agreement, Buyer shall deposit ${earnestMoney || '[Earnest Money]'} into escrow as an earnest money deposit.
-            </p>
-
-            <h4 className="font-bold mt-6 mb-2">3. Due Diligence</h4>
-            <p>
-              Buyer shall have a period of {dueDiligenceDays || '[X]'} days following the execution of this LOI to conduct legal, financial, and operational due diligence.
-            </p>
-
-            <h4 className="font-bold mt-6 mb-2">4. Closing Date</h4>
-            <p>
-              The parties anticipate closing the transaction on or before {closingDate || '[Closing Date]'}, subject to the satisfaction of all closing conditions.
-            </p>
-
-            <h4 className="font-bold mt-6 mb-2">5. Transition and Training</h4>
-            <p>
-              Seller agrees to provide training and transition assistance to Buyer for a period of {trainingPeriod || '[Training Period]'} following the closing at no additional cost.
-            </p>
-
-            <h4 className="font-bold mt-6 mb-2">6. Non-Compete Agreement</h4>
-            <p>
-              Seller agrees not to compete with the Business within a reasonable geographic radius for a period of {nonCompetePeriod || '[Non-Compete Period]'} following the closing.
-            </p>
-
-            <p className="mt-8">
-              This LOI is non-binding and is intended solely as a basis for further negotiations.
-            </p>
-
-            <div className="mt-12 flex justify-between">
-              <div className="w-[45%]">
-                <p className="mb-8"><strong>BUYER:</strong></p>
-                <div className="border-b border-black mb-2 h-8"></div>
-                <p>{buyerName || '[Buyer Name]'}</p>
+            <div className="mt-16 flex justify-between pt-8">
+              <div className="w-[40%]">
+                <p className="mb-12 font-bold text-sm uppercase tracking-wider text-gray-500">Buyer</p>
+                <div className="border-b border-gray-400 mb-3 h-8"></div>
+                <p className="font-bold">{buyerName || '[Buyer Name]'}</p>
+                <p className="text-sm text-gray-500">Date: _________________</p>
               </div>
-              <div className="w-[45%]">
-                <p className="mb-8"><strong>SELLER:</strong></p>
-                <div className="border-b border-black mb-2 h-8"></div>
-                <p>{initialData.sellerName || '[Seller Name]'}</p>
+              <div className="w-[40%]">
+                <p className="mb-12 font-bold text-sm uppercase tracking-wider text-gray-500">Seller</p>
+                <div className="border-b border-gray-400 mb-3 h-8"></div>
+                <p className="font-bold">{initialData.sellerName || '[Seller Name]'}</p>
+                <p className="text-sm text-gray-500">Date: _________________</p>
               </div>
             </div>
           </div>
