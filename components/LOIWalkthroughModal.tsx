@@ -65,7 +65,7 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
     
     try {
       const canvas = await html2canvas(printRef.current, {
-        scale: 2,
+        scale: 2, // Restored to 2 for print-quality text
         useCORS: true,
         logging: false
       });
@@ -74,7 +74,15 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
         throw new Error(`Canvas dimensions are invalid: ${canvas.width}x${canvas.height}`);
       }
 
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      let imgData = canvas.toDataURL('image/jpeg', 0.6); // Lowered quality to compensate for higher scale
+      
+      // If the image data is still too large for Firestore (approaching 1MB), compress it further
+      if (imgData.length > 900000) {
+        imgData = canvas.toDataURL('image/jpeg', 0.4);
+      }
+      if (imgData.length > 900000) {
+        imgData = canvas.toDataURL('image/jpeg', 0.2);
+      }
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'pt',
@@ -309,19 +317,33 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
         </div>
 
         <div className="p-4 border-t border-slate-800 bg-slate-800/50 flex justify-between">
-          <button
-            onClick={handlePrev}
-            disabled={step === 1 || isGenerating}
-            className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white disabled:opacity-50 transition-colors"
-          >
-            Back
-          </button>
+          {!(step === 4 && trackedLink) ? (
+            <button
+              onClick={handlePrev}
+              disabled={step === 1 || isGenerating}
+              className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white disabled:opacity-50 transition-colors"
+            >
+              Back
+            </button>
+          ) : (
+            <div></div>
+          )}
+          
           {step < 4 && (
             <button
               onClick={handleNext}
               className="px-6 py-2 bg-amber-400 hover:bg-amber-300 text-slate-900 text-sm font-bold rounded transition-colors"
             >
               Next
+            </button>
+          )}
+          
+          {step === 4 && (
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded transition-colors"
+            >
+              Finished!
             </button>
           )}
         </div>
