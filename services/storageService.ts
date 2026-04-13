@@ -286,6 +286,7 @@ export const dataService = {
       const { files, ...cleanDealData } = finalDealData;
 
       const dealRef = doc(db, `users/${userId}/deals/${cacheId}`);
+      const dealSnap = await getDoc(dealRef);
       
       const dealPayload = removeUndefined({
         userId,
@@ -295,11 +296,16 @@ export const dataService = {
         metrics: finalMetrics,
         crm: crm || defaultCrm(),
         personalNotes: personalNotes || '',
-        savedAt: new Date(),
         updatedAt: new Date()
       });
 
-      await setDoc(dealRef, dealPayload, { merge: true });
+      // Only set savedAt if it's a new deal, otherwise let merge preserve it
+      const finalPayload = {
+        ...dealPayload,
+        ...(dealSnap.exists() ? {} : { savedAt: new Date() })
+      };
+
+      await setDoc(dealRef, finalPayload, { merge: true });
 
       return {
         id: cacheId,

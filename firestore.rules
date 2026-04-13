@@ -122,7 +122,7 @@ service cloud.firestore {
       return hasRequiredFields(['userId', 'dealId', 'pdfUrl', 'sellerName', 'sentAt', 'opens', 'views']) &&
              data.userId is string &&
              data.dealId is string &&
-             data.pdfUrl is string && data.pdfUrl.size() < 2000 &&
+             data.pdfUrl is string && data.pdfUrl.size() < 1000000 &&
              data.sellerName is string && data.sellerName.size() < 200 &&
              data.sentAt is timestamp &&
              data.opens is number && data.opens >= 0 &&
@@ -174,7 +174,7 @@ service cloud.firestore {
         allow create: if isOwner(userId) && isValidDeal(userId);
         allow update: if isOwner(userId) && isValidDeal(userId) &&
                       request.resource.data.userId == resource.data.userId &&
-                      request.resource.data.savedAt == resource.data.savedAt;
+                      (!('savedAt' in request.resource.data) || request.resource.data.savedAt == resource.data.savedAt);
         allow delete: if isOwner(userId);
 
         match /chats/{chatId} {

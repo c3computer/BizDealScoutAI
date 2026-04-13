@@ -43,7 +43,11 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
       })) as LOITrackingData[];
       
       // Sort by sentAt descending
-      data.sort((a, b) => b.sentAt - a.sentAt);
+      data.sort((a, b) => {
+        const timeA = a.sentAt?.toMillis ? a.sentAt.toMillis() : (a.sentAt?.seconds ? a.sentAt.seconds * 1000 : a.sentAt);
+        const timeB = b.sentAt?.toMillis ? b.sentAt.toMillis() : (b.sentAt?.seconds ? b.sentAt.seconds * 1000 : b.sentAt);
+        return timeB - timeA;
+      });
       setTrackingData(data);
     });
 

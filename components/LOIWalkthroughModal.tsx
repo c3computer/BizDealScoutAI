@@ -60,7 +60,7 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
   const handleNext = () => setStep(s => s + 1);
   const handlePrev = () => setStep(s => s - 1);
 
-  const generatePDF = async (): Promise<File | null> => {
+  const generatePDF = async (): Promise<{ file: File, dataUrl: string } | null> => {
     if (!printRef.current) return null;
     
     try {
@@ -98,7 +98,11 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
       }
       
       const pdfBlob = pdf.output('blob');
-      return new File([pdfBlob], `LOI_${initialData.sellerName.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
+      const dataUrl = pdf.output('datauristring');
+      return {
+        file: new File([pdfBlob], `LOI_${initialData.sellerName.replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' }),
+        dataUrl
+      };
     } catch (error) {
       console.error("Error generating PDF:", error);
       return null;
@@ -109,12 +113,12 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
     setIsGenerating(true);
     setErrorMessage(null);
     try {
-      const file = await generatePDF();
-      if (file) {
-        const url = URL.createObjectURL(file);
+      const result = await generatePDF();
+      if (result) {
+        const url = URL.createObjectURL(result.file);
         const a = document.createElement('a');
         a.href = url;
-        a.download = file.name;
+        a.download = result.file.name;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -141,32 +145,21 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
     setTrackedLink(null);
 
     try {
-      const file = await generatePDF();
-      if (!file) {
+      const result = await generatePDF();
+      if (!result) {
         setErrorMessage("Failed to generate PDF.");
         setIsGenerating(false);
         return;
       }
 
-      // Upload to Firebase Storage with timeout
       const loiId = Math.random().toString(36).substr(2, 9);
-      const storageRef = ref(storage, `users/${userId}/deals/${dealId}/loi/${loiId}.pdf`);
       
-      const uploadPromise = uploadBytes(storageRef, file);
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error("Upload timed out. Please check your connection or Firebase Storage rules.")), 15000)
-      );
-      
-      await Promise.race([uploadPromise, timeoutPromise]);
-      
-      const pdfUrl = await getDownloadURL(storageRef);
-
-      // Create tracking document
+      // Store the base64 PDF directly in Firestore to avoid Storage rules/timeout issues
       const trackingRef = doc(db, 'loi_tracking', loiId);
       await setDoc(trackingRef, {
         userId,
         dealId,
-        pdfUrl,
+        pdfUrl: result.dataUrl,
         sellerName: initialData.sellerName || 'Unknown Seller',
         sentAt: new Date(),
         opens: 0,
@@ -178,7 +171,7 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
       setSuccessMessage("Tracked link generated successfully! You can now copy and send this link.");
     } catch (error) {
       console.error("Error generating tracked link:", error);
-      setErrorMessage("An unexpected error occurred while generating the link.");
+      setErrorMessage(error instanceof Error ? error.message : "An unexpected error occurred while generating the link.");
     } finally {
       setIsGenerating(false);
     }
