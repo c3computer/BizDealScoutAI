@@ -2,6 +2,8 @@ export interface InvestorProfile {
   goals: string;
   mustHaves: string;
   superpowers: string;
+  name?: string;
+  entityName?: string;
 }
 
 export interface DealFile {

@@ -103,7 +103,19 @@ export const CapitalRaisingBox: React.FC<CapitalRaisingBoxProps> = ({ profile, d
     if (!markdownToPrint) {
       setIsTyping(true);
       try {
-        const proposalMessage = `Please provide a comprehensive Deal Structure Proposal formatted as a professional document. Use today's date: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.`;
+        const proposalMessage = `Please provide a comprehensive Deal Structure Proposal formatted as a professional document. 
+        
+Please ensure the header is formatted EXACTLY like this, with each item as its own separate paragraph (separated by blank lines) so they do not run together:
+
+**TO:** Potential Investment Partners / Private Money Lenders
+
+**FROM:** ${profile.name || '[Your Name]'}, ${profile.entityName || '[Your Entity]'}
+
+**DATE:** ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+
+**SUBJECT:** Acquisition & Re-Capitalization Proposal: ${deal.title || deal.url}
+
+Then proceed with the rest of the Memorandum of Investment Strategy.`;
         const response = await queryCapitalRaisingChat(profile, deal, analysis, chatHistory, proposalMessage);
         setFinancialStructureMarkdown(response);
         markdownToPrint = response;

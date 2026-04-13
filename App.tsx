@@ -49,7 +49,9 @@ const App: React.FC = () => {
   const [profile, setProfile] = useState<InvestorProfile>({
     goals: '',
     mustHaves: '',
-    superpowers: ''
+    superpowers: '',
+    name: '',
+    entityName: ''
   });
 
   const [crm, setCrm] = useState<CrmData>(defaultCrm());
@@ -892,6 +894,18 @@ const App: React.FC = () => {
                     </div>
                 </div>
 
+                <Input 
+                  label="Your Name" 
+                  value={profile.name || ''} 
+                  onChange={(e) => setProfile({...profile, name: e.target.value})}
+                  placeholder="e.g. John Doe"
+                />
+                <Input 
+                  label="Entity Name" 
+                  value={profile.entityName || ''} 
+                  onChange={(e) => setProfile({...profile, entityName: e.target.value})}
+                  placeholder="e.g. Acme Holdings LLC"
+                />
                 <Input 
                   label="Financial Goal" 
                   value={profile.goals} 
