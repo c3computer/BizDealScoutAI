@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { LOIWalkthroughModal } from './LOIWalkthroughModal';
 import { LOITerms, LOITrackingData } from '../types';
@@ -95,6 +95,17 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
     return val;
   };
 
+  const handleDeleteTracking = async (trackingId: string) => {
+    if (window.confirm("Are you sure you want to delete this tracked link?")) {
+      try {
+        await deleteDoc(doc(db, 'loi_tracking', trackingId));
+      } catch (error) {
+        console.error("Error deleting tracking link:", error);
+        alert("Failed to delete the tracked link.");
+      }
+    }
+  };
+
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-xl overflow-hidden relative group flex flex-col">
       <div className="absolute top-0 left-0 w-1 h-full bg-slate-600 group-hover:bg-emerald-400 transition-colors"></div>
@@ -124,15 +135,26 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
                   <p className="text-sm font-bold text-white">{track.sellerName}</p>
                   <p className="text-xs text-slate-400">Sent: {new Date(getTimestamp(track.sentAt)).toLocaleString()}</p>
                 </div>
-                <div className="flex space-x-4 text-center">
-                  <div>
-                    <p className="text-xs text-slate-400 uppercase">Opens</p>
-                    <p className={`text-lg font-bold ${track.opens > 0 ? 'text-emerald-400' : 'text-slate-300'}`}>{track.opens}</p>
+                <div className="flex items-center space-x-4">
+                  <div className="flex space-x-4 text-center">
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase">Opens</p>
+                      <p className={`text-lg font-bold ${track.opens > 0 ? 'text-emerald-400' : 'text-slate-300'}`}>{track.opens}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase">Views</p>
+                      <p className={`text-lg font-bold ${track.views > 0 ? 'text-amber-400' : 'text-slate-300'}`}>{track.views}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-slate-400 uppercase">Views</p>
-                    <p className={`text-lg font-bold ${track.views > 0 ? 'text-amber-400' : 'text-slate-300'}`}>{track.views}</p>
-                  </div>
+                  <button
+                    onClick={() => handleDeleteTracking(track.id!)}
+                    className="text-slate-500 hover:text-rose-500 transition-colors p-2"
+                    title="Delete Tracked Link"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}
