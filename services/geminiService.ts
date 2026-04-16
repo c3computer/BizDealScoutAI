@@ -382,7 +382,9 @@ export const queryCapitalRaisingChat = async (
   deal: DealOpportunity,
   analysis: DealAnalysis | null,
   chatHistory: ChatMessage[],
-  newMessage: string
+  newMessage: string,
+  mainChatHistory?: ChatMessage[],
+  loiTerms?: LOITerms | null
 ): Promise<string> => {
   let apiKey = process.env.GEMINI_API_KEY || '';
   const ai = new GoogleGenAI({ apiKey });
@@ -411,7 +413,13 @@ Your goal is to help the user structure a deal to raise private capital based on
 3. Refinance before final sale (Paying off short-term PMLs or seller finance balloons using Commercial loans, SBA 7a, DSCR, etc.)
 4. Exit Planning / Sale (Final equity payout, capital gains, selling the asset)
 
-Please add this methodology to your suggested structures: Tax Savings to get to a bigger downpayment
+IMPORTANT RULES FOR DEAL TERMS:
+- You MUST align your capital raising structure with the terms already negotiated or discussed in the "DEAL AI CHAT HISTORY" and "LOI TERMS" below.
+- If the LOI or Chat History states we are offering the seller $300k cash, your structure CANNOT offer seller financing. You must raise the $300k cash from investors or lenders.
+- Assume the Earnest Money Deposit (EMD) is $0 unless an EMD amount is explicitly stipulated in the LOI offer or chat history. There is not always an EMD on business buying.
+- ONLY list or reference "The Morby Method" (Pre-Transfer Refinance) if it is actively being used in the specific deal structure being proposed. Do not assume every offer will begin with a Morby Method Refi. If it is not being used, do not mention it.
+
+If the Morby Method IS being used, here is the methodology to reference for tax savings:
 # The Morby Method Applied to Business Acquisition
 
 This is a legitimate and powerful structure. Let me break down exactly what's happening mechanically, then show you the tax math you can put in front of the seller.
@@ -550,7 +558,13 @@ ${JSON.stringify(dealWithoutFiles, null, 2)}
 PREVIOUS ANALYSIS:
 ${analysis ? JSON.stringify(analysis, null, 2) : 'No analysis available yet.'}
 
-CHAT HISTORY:
+LOI TERMS (AGREED UPON TERMS):
+${loiTerms ? JSON.stringify(loiTerms, null, 2) : 'No LOI terms extracted yet.'}
+
+DEAL AI CHAT HISTORY (NEGOTIATION CONTEXT):
+${mainChatHistory && mainChatHistory.length > 0 ? mainChatHistory.map(msg => `${msg.role.toUpperCase()}: ${msg.text}`).join('\n') : 'No chat history available.'}
+
+CAPITAL RAISING CHAT HISTORY:
 ${chatHistory.map(msg => `${msg.role.toUpperCase()}: ${msg.text}`).join('\n')}
 
 USER MESSAGE:

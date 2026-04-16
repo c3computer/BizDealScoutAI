@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { InvestorProfile, DealOpportunity, DealAnalysis, ChatMessage } from '../types';
+import { InvestorProfile, DealOpportunity, DealAnalysis, ChatMessage, LOITerms } from '../types';
 import { queryCapitalRaisingChat } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import { PrivateLenderScriptModal } from './PrivateLenderScriptModal';
@@ -8,6 +8,8 @@ interface CapitalRaisingBoxProps {
   profile: InvestorProfile;
   deal: DealOpportunity;
   analysis: DealAnalysis | null;
+  mainChatHistory: ChatMessage[];
+  loiTerms: LOITerms | null;
 }
 
 const PrintFinancialStructure: React.FC<{ markdown: string; dealTitle?: string }> = ({ markdown, dealTitle }) => {
@@ -59,7 +61,7 @@ const PrintFinancialStructure: React.FC<{ markdown: string; dealTitle?: string }
   );
 };
 
-export const CapitalRaisingBox: React.FC<CapitalRaisingBoxProps> = ({ profile, deal, analysis }) => {
+export const CapitalRaisingBox: React.FC<CapitalRaisingBoxProps> = ({ profile, deal, analysis, mainChatHistory, loiTerms }) => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -86,7 +88,7 @@ export const CapitalRaisingBox: React.FC<CapitalRaisingBoxProps> = ({ profile, d
     setIsTyping(true);
 
     try {
-      const response = await queryCapitalRaisingChat(profile, deal, analysis, chatHistory, inputMessage);
+      const response = await queryCapitalRaisingChat(profile, deal, analysis, chatHistory, inputMessage, mainChatHistory, loiTerms);
       const aiMessage: ChatMessage = { role: 'model', text: response, timestamp: Date.now() };
       setChatHistory(prev => [...prev, aiMessage]);
     } catch (error: any) {
@@ -111,12 +113,12 @@ Please ensure the header is formatted EXACTLY like this, with each item as its o
 
 **FROM:** ${profile.name || '[Your Name]'}, ${profile.entityName || '[Your Entity]'}
 
-**DATE:** ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+DATE: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
 
 **SUBJECT:** Acquisition & Re-Capitalization Proposal: ${deal.title || deal.url}
 
 Then proceed with the rest of the Memorandum of Investment Strategy.`;
-        const response = await queryCapitalRaisingChat(profile, deal, analysis, chatHistory, proposalMessage);
+        const response = await queryCapitalRaisingChat(profile, deal, analysis, chatHistory, proposalMessage, mainChatHistory, loiTerms);
         setFinancialStructureMarkdown(response);
         markdownToPrint = response;
         
@@ -135,7 +137,7 @@ Then proceed with the rest of the Memorandum of Investment Strategy.`;
 
     // Force the date in the markdown to be today's date just in case
     const todayStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    markdownToPrint = markdownToPrint.replace(/\*\*DATE:\*\*.*?(?=\n|$)/g, `**DATE:** ${todayStr}`);
+    markdownToPrint = markdownToPrint.replace(/\*\*DATE:\*\*.*?(?=\n|$)/g, `DATE: ${todayStr}`);
     markdownToPrint = markdownToPrint.replace(/DATE:.*?(?=\n|$)/g, `DATE: ${todayStr}`);
     setFinancialStructureMarkdown(markdownToPrint);
 
@@ -178,11 +180,22 @@ Then proceed with the rest of the Memorandum of Investment Strategy.`;
                 body { background: white; }
                 #print-container { padding: 0; background: white; display: block; }
                 #print-content { box-shadow: none; max-width: none; }
-                @page { margin: 15mm; size: auto; }
+                @page { margin: 0; }
+                body { padding: 15mm; }
+                #custom-footer {
+                  position: fixed;
+                  bottom: 10mm;
+                  left: 15mm;
+                  font-family: sans-serif;
+                  font-size: 10px;
+                  color: #8A9BB5;
+                  display: block !important;
+                }
               }
             </style>
           </head>
           <body>
+            <div id="custom-footer" style="display: none;">Capital Raising & Deal Terms</div>
             <div id="print-container">
                 <div id="print-content">
                     ${contentHtml}
@@ -220,53 +233,8 @@ Then proceed with the rest of the Memorandum of Investment Strategy.`;
         </h2>
       </div>
 
-      <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column: The 4 Stages */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2 text-center">The 4 Stages of Profitability</h3>
-          
-          <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-            <div className="flex items-start mb-2">
-              <div className="bg-amber-500/20 text-amber-400 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">1</div>
-              <div>
-                <h4 className="text-white font-medium text-sm">Acquisition</h4>
-                <p className="text-xs text-slate-400 mt-1">e.g., 2% acquisition fee charged at deal inception, Gator lending for EMD, short-term PMLs.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-            <div className="flex items-start mb-2">
-              <div className="bg-amber-500/20 text-amber-400 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">2</div>
-              <div>
-                <h4 className="text-white font-medium text-sm">Monthly Profit</h4>
-                <p className="text-xs text-slate-400 mt-1">The monthly profit spread, cash flow distributions, and equity splits with private money lenders.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-            <div className="flex items-start mb-2">
-              <div className="bg-amber-500/20 text-amber-400 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">3</div>
-              <div>
-                <h4 className="text-white font-medium text-sm">Refinance</h4>
-                <p className="text-xs text-slate-400 mt-1">Paying off short-term PMLs or seller finance balloons using Commercial loans, SBA 7a, DSCR, etc.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-            <div className="flex items-start">
-              <div className="bg-amber-500/20 text-amber-400 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">4</div>
-              <div>
-                <h4 className="text-white font-medium text-sm">Exit Planning / Sale</h4>
-                <p className="text-xs text-slate-400 mt-1">Final equity payout, capital gains distribution, and selling the asset.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: AI Chat */}
+      <div className="p-4 flex flex-col gap-6">
+        {/* Top: AI Chat */}
         <div className="flex flex-col h-[500px] bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
           <div className="bg-slate-800 p-3 border-b border-slate-700">
             <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Capital Raising Strategist AI</h3>
@@ -325,36 +293,84 @@ Then proceed with the rest of the Memorandum of Investment Strategy.`;
               </button>
             </div>
           </form>
-          
-          <div className="p-4 bg-slate-800 border-t border-slate-700 flex flex-col items-center space-y-4">
-            <button
-              onClick={handlePrint}
-              disabled={isTyping}
-              className={`w-full max-w-md py-3 uppercase font-display font-bold tracking-widest text-slate-900 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 rounded flex items-center justify-center space-x-2
-                  ${isTyping ? 'bg-slate-600' : 'bg-green-400 hover:bg-green-300 shadow-[0_0_15px_rgba(74,222,128,0.3)]'}
-              `}
-            >
-              {isTyping ? (
-                <span>Generating PDF...</span>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                  </svg>
-                  <span>Print</span>
-                </>
-              )}
-            </button>
+        </div>
 
-            <button
-              onClick={() => setIsScriptModalOpen(true)}
-              className="text-amber-400 hover:text-amber-300 text-sm font-medium flex items-center transition-colors"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Generate Private Lender Script (PDF)
-            </button>
+        {/* Middle: Buttons */}
+        <div className="flex flex-col items-center space-y-4">
+          <button
+            onClick={handlePrint}
+            disabled={isTyping}
+            className={`w-full max-w-xs py-2 text-sm uppercase font-display font-bold tracking-widest text-slate-900 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 rounded flex items-center justify-center space-x-2
+                ${isTyping ? 'bg-slate-600' : 'bg-green-400 hover:bg-green-300 shadow-[0_0_15px_rgba(74,222,128,0.3)]'}
+            `}
+          >
+            {isTyping ? (
+              <span>Generating PDF...</span>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span>Print</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => setIsScriptModalOpen(true)}
+            className="text-amber-400 hover:text-amber-300 text-sm font-medium flex items-center transition-colors"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Generate Private Lender Script (PDF)
+          </button>
+        </div>
+
+        {/* Bottom: The 4 Stages */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2 text-center">The 4 Stages of Profitability</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+              <div className="flex items-start mb-2">
+                <div className="bg-amber-500/20 text-amber-400 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">1</div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Acquisition</h4>
+                  <p className="text-xs text-slate-400 mt-1">e.g., 2% acquisition fee charged at deal inception, Gator lending for EMD, short-term PMLs.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+              <div className="flex items-start mb-2">
+                <div className="bg-amber-500/20 text-amber-400 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">2</div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Monthly Profit</h4>
+                  <p className="text-xs text-slate-400 mt-1">The monthly profit spread, cash flow distributions, and equity splits with private money lenders.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+              <div className="flex items-start mb-2">
+                <div className="bg-amber-500/20 text-amber-400 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">3</div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Refinance</h4>
+                  <p className="text-xs text-slate-400 mt-1">Paying off short-term PMLs or seller finance balloons using Commercial loans, SBA 7a, DSCR, etc.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="bg-amber-500/20 text-amber-400 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">4</div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Exit Planning / Sale</h4>
+                  <p className="text-xs text-slate-400 mt-1">Final equity payout, capital gains distribution, and selling the asset.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -133,7 +133,20 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
               <div key={track.id} className="bg-slate-800 rounded border border-slate-700 p-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-bold text-white">{track.sellerName}</p>
-                  <p className="text-xs text-slate-400">Sent: {new Date(getTimestamp(track.sentAt)).toLocaleString()}</p>
+                  <p className="text-xs text-slate-400 mb-1">Sent: {new Date(getTimestamp(track.sentAt)).toLocaleString()}</p>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/?loi=${track.id}`;
+                      navigator.clipboard.writeText(url);
+                      alert('Trackable link copied to clipboard!');
+                    }}
+                    className="text-[10px] text-emerald-400 hover:text-emerald-300 hover:underline flex items-center bg-slate-900/50 px-2 py-1 rounded border border-emerald-900/50 transition-colors text-left"
+                  >
+                    <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Copy Trackable Link
+                  </button>
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="flex space-x-4 text-center">
@@ -290,24 +303,6 @@ export const CreateLOIBox: React.FC<CreateLOIBoxProps> = ({ loiTerms, userId, de
             </svg>
             {isExtracting ? 'Extracting Terms...' : 'Start LOI Walkthrough'}
           </button>
-
-          <div className="mt-4 text-center">
-            {trackingData.length > 0 ? (
-              <a href={`/?loi=${trackingData[0].id}`} target="_blank" rel="noreferrer" className="text-emerald-400 hover:text-emerald-300 hover:underline text-sm font-medium transition-colors flex items-center justify-center">
-                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                Trackable link to LOI ({trackingData[0].sellerName})
-              </a>
-            ) : (
-              <span className="text-slate-500 text-sm italic flex items-center justify-center">
-                <svg className="w-4 h-4 mr-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                Trackable link to LOI
-              </span>
-            )}
-          </div>
         </form>
       </div>
 

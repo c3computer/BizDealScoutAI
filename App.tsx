@@ -1238,7 +1238,13 @@ const App: React.FC = () => {
           />
 
           {/* Card 5: Capital Raising & Deal Terms */}
-          <CapitalRaisingBox profile={profile} deal={deal} analysis={result} />
+          <CapitalRaisingBox 
+            profile={profile} 
+            deal={deal} 
+            analysis={result} 
+            mainChatHistory={chatMessages}
+            loiTerms={loiTerms}
+          />
 
           {/* 2. Growth & Scaling Context (MOVED HERE) */}
           <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-xl overflow-hidden relative group">
