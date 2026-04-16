@@ -36,15 +36,32 @@ export const EmailModal: React.FC<EmailModalProps> = ({
     e.preventDefault();
     setIsSending(true);
     
-    // Simulate sending email
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSending(false);
-    setSuccess(true);
-    
-    setTimeout(() => {
-      onClose();
-    }, 2000);
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: toEmail,
+          subject,
+          text: body
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send email');
+      }
+
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+    } catch (err: any) {
+      alert(err.message || 'Error sending email. Please check configuration.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (

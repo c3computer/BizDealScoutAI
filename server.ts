@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import cors from "cors";
+import { Resend } from 'resend';
 
 const app = express();
 const PORT = 3000;
@@ -276,6 +277,37 @@ app.get("/api/extension/deals", (req, res) => {
     res.json(extensionDeals);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch extension deals" });
+  }
+});
+
+app.post("/api/send-email", async (req, res) => {
+  try {
+    const { to, subject, text } = req.body;
+    
+    if (!to || !subject || !text) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      return res.status(400).json({ error: "RESEND_API_KEY is not configured on the server." });
+    }
+
+    const resend = new Resend(resendApiKey);
+    const { data, error } = await resend.emails.send({
+      from: 'Acquisition Edge <onboarding@resend.dev>', // Default resend testing domain
+      to,
+      subject,
+      text
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ success: true, data });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to send email" });
   }
 });
 
