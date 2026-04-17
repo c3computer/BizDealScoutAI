@@ -78,16 +78,23 @@ export const dataService = {
           
           // Upload base64 string
           const base64Data = file.data.split(',')[1] || file.data;
-          await uploadString(storageRef, base64Data, 'base64', { contentType: file.mimeType });
           
-          const downloadUrl = await getDownloadURL(storageRef);
-          
-          const { data, ...fileWithoutData } = file;
-          return {
-            ...fileWithoutData,
-            storagePath,
-            downloadUrl
-          };
+          try {
+            await uploadString(storageRef, base64Data, 'base64', { contentType: file.mimeType });
+            const downloadUrl = await getDownloadURL(storageRef);
+            
+            const { data, ...fileWithoutData } = file;
+            return {
+              ...fileWithoutData,
+              storagePath,
+              downloadUrl
+            };
+          } catch (storageErr) {
+            console.warn(`Failed to upload ${file.name} to Storage, skipping binary:`, storageErr);
+            // Drop base64 data to avoid > 1MB Firestore limit, but keep other info (like extractedText)
+            const { data, ...fileWithoutData } = file;
+            return fileWithoutData;
+          }
         }
         return file;
       }));

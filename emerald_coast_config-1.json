@@ -1,0 +1,78 @@
+{
+  "deal_overview": {
+    "company_name": "Emerald Coast Indoor Shooting & Sport",
+    "date": "4/16/2026",
+    "purchase_price": 300000,
+    "asset_value": 433000,
+    "closing_costs": 25000,
+    "real_estate_option": 2375000
+  },
+  "capital_stack": [
+    {
+      "source": "Earnest Money (Gator)",
+      "amount": 1000,
+      "terms": "$2,000 flat return at close",
+      "security": "Unsecured"
+    },
+    {
+      "source": "Acquisition Fee (GP)",
+      "amount": 6000,
+      "terms": "2% fee paid at closing",
+      "security": "N/A"
+    },
+    {
+      "source": "Private Money Lender (Tier 1)",
+      "amount": 150000,
+      "terms": "12% IO, 24-month balloon",
+      "security": "1st lien on FF&E ($206k)"
+    },
+    {
+      "source": "Equity Partners (Tier 2)",
+      "amount": 175000,
+      "terms": "10% pref + 60% equity",
+      "security": "60% LLC ownership"
+    }
+  ],
+  "operations": {
+    "current_sde": 195664,
+    "manager_salary": 70000,
+    "manager_label": "Operations Manager Salary"
+  },
+  "debt_service": [
+    {
+      "label": "PML Debt Service (12% on $150k)",
+      "annual_amount": 18000
+    },
+    {
+      "label": "Investor Preferred Return (10% on $175k)",
+      "annual_amount": 17500
+    }
+  ],
+  "distributions": {
+    "gp_pct": 0.40,
+    "lp_pct": 0.60
+  },
+  "exit_strategy": {
+    "exit_year": 7,
+    "business_ebitda": 200000,
+    "ebitda_multiple": 4.0,
+    "real_estate_current": 2375000,
+    "re_appreciation": 0.04,
+    "real_estate_value": true,
+    "waterfall": [
+      {
+        "payee": "SBA Senior Debt Payoff",
+        "amount": 2100000
+      },
+      {
+        "payee": "Return Equity Partner Capital",
+        "amount": 175000
+      }
+    ],
+    "final_split": {
+      "gp_pct": 0.70,
+      "lp_pct": 0.30
+    }
+  },
+  "output_filename": "Generated_Deal_Test.xlsx"
+}
