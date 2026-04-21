@@ -67,7 +67,7 @@ service cloud.firestore {
               data.userId == userId &&
               data.dealId == dealId &&
               data.role in ['user', 'model'] &&
-              data.text is string && data.text.size() < 50000 &&
+              data.text is string && data.text.size() < 1000000 &&
               data.timestamp is timestamp;
     }
 
@@ -167,9 +167,9 @@ service cloud.firestore {
         allow create: if (isOwner(userId) || isTeamMemberOf(userId)) && isValidId(dealId) && isValidDeal(incoming(), userId) && incoming().savedAt == request.time;
         
         allow update: if (isOwner(userId) || isTeamMemberOf(userId)) && isValidDeal(incoming(), userId) &&
-                      incoming().userId == existing().userId &&
-                      incoming().savedAt == existing().savedAt &&
-                      incoming().diff(existing()).affectedKeys().hasOnly(['url', 'dealData', 'analysis', 'metrics', 'crm', 'personalNotes', 'updatedAt', 'files']);
+                      (!('userId' in existing()) || incoming().userId == existing().userId) &&
+                      (!('savedAt' in existing()) || incoming().savedAt == existing().savedAt) &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['userId', 'savedAt', 'url', 'dealData', 'analysis', 'metrics', 'crm', 'personalNotes', 'updatedAt', 'files']);
                       
         allow delete: if isOwner(userId) || isTeamMemberOf(userId);
 
@@ -196,11 +196,11 @@ service cloud.firestore {
                        
       allow update: if isAuthenticated() && isValidTeam(incoming()) &&
                        (teamId == request.auth.uid || isTeamMember(teamId)) &&
-                       incoming().ownerId == existing().ownerId &&
-                       incoming().createdAt == existing().createdAt &&
+                       (!('ownerId' in existing()) || incoming().ownerId == existing().ownerId) &&
+                       (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt) &&
                        (
-                         (existing().ownerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'memberIds', 'updatedAt', 'tier', 'stripeCustomerId', 'stripeSubscriptionId', 'lifetimeAccess'])) ||
-                         (isTeamMember(teamId) && incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt']))
+                         (existing().ownerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['ownerId', 'createdAt', 'name', 'memberIds', 'updatedAt', 'tier', 'stripeCustomerId', 'stripeSubscriptionId', 'lifetimeAccess'])) ||
+                         (isTeamMember(teamId) && incoming().diff(existing()).affectedKeys().hasOnly(['ownerId', 'createdAt', 'updatedAt']))
                        );
                        
       allow delete: if false; // Teams cannot be deleted directly

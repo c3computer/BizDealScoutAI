@@ -69,6 +69,7 @@ const App: React.FC = () => {
   const [growthLoading, setGrowthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   
   const [currentCacheId, setCurrentCacheId] = useState<string | null>(null);
@@ -209,6 +210,37 @@ const App: React.FC = () => {
 
     return { multiple, margin, status };
   }, [deal.askingPrice, deal.sde, deal.revenue]);
+
+  // Setup Refs for Auto-Save after state hooks are declared
+  const autoSaveRefs = useRef({ deal, result, metrics, currentCacheId, crm, chatMessages });
+  useEffect(() => {
+    autoSaveRefs.current = { deal, result, metrics, currentCacheId, crm, chatMessages };
+  }, [deal, result, metrics, currentCacheId, crm, chatMessages]);
+
+  // 5 Minute Auto-Save Loop
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      const state = autoSaveRefs.current;
+      if (state.result && state.currentCacheId) {
+        try {
+          const entry = dataService.saveToGlobalCache(
+            state.deal.listingUrl || 'manual-' + Date.now(), 
+            state.deal, 
+            state.result, 
+            metrics,
+            state.currentCacheId
+          );
+          dataService.saveUserDeal(user.id, entry.id!, state.deal.notes, state.crm, state.deal, state.result, metrics)
+            .then(() => dataService.saveDealExtraData(user.id, entry.id!, state.deal.files, state.chatMessages))
+            .catch((e) => console.error("Auto-save deal error:", e));
+        } catch (err) {
+          console.error("Auto-save cache error:", err);
+        }
+      }
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user, metrics]);
 
   const handleImport = async (forceRefresh = false) => {
     if (!deal.listingUrl) {
@@ -526,6 +558,7 @@ const App: React.FC = () => {
       return;
     }
     
+    setIsSaving(true);
     // Always update global cache to ensure latest dealData (like callSummary) is saved
     const entry = dataService.saveToGlobalCache(
       deal.listingUrl || 'manual-' + Date.now(), 
@@ -552,11 +585,14 @@ const App: React.FC = () => {
         await syncData();
 
         setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
       } catch (err) {
         console.error("Failed to save deal:", err);
         alert("Failed to save deal. Please try again.");
+      } finally {
+        setIsSaving(false);
       }
+    } else {
+      setIsSaving(false);
     }
   };
 
@@ -1382,13 +1418,22 @@ const App: React.FC = () => {
                    {result && (
                      <button
                         onClick={handleSaveDeal}
-                        className={`text-xs uppercase font-bold tracking-wider px-3 py-1 rounded transition-colors border ${
+                        disabled={isSaving}
+                        className={`text-xs uppercase font-bold tracking-wider px-3 py-1 rounded transition-colors border flex items-center ${
                            saveSuccess 
                             ? 'bg-green-900/50 border-green-500 text-green-400' 
                             : 'bg-slate-900 border-slate-600 text-slate-300 hover:border-amber-400 hover:text-amber-400'
-                        }`}
+                        } ${isSaving ? 'opacity-80 cursor-wait' : ''}`}
                      >
-                       {saveSuccess ? 'Saved!' : user ? 'Save to History' : 'Login to Save'}
+                       {isSaving ? (
+                         <>
+                           <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                           </svg>
+                           Saving...
+                         </>
+                       ) : saveSuccess ? 'Saved!' : user ? 'Save to History' : 'Login to Save'}
                      </button>
                    )}
                    {result && (

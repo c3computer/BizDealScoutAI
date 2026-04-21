@@ -311,10 +311,10 @@ export const dataService = {
         updatedAt: serverTimestamp()
       });
 
-      // Only set savedAt if it's a new deal, otherwise let merge preserve it
+      // Only set savedAt if it's a new deal or missing from existing document, otherwise let merge preserve it
       const finalPayload = {
         ...dealPayload,
-        ...(dealSnap.exists() ? {} : { savedAt: serverTimestamp() })
+        ...((dealSnap.exists() && dealSnap.data()?.savedAt) ? {} : { savedAt: serverTimestamp() })
       };
 
       await setDoc(dealRef, finalPayload, { merge: true });
