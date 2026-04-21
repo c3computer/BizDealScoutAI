@@ -787,6 +787,7 @@ export const extractLOITerms = async (history: ChatMessage[]): Promise<any> => {
     Return ONLY a valid JSON object with the following keys (use empty strings if a value is not found):
     {
       "purchasePrice": "string (e.g., '1,500,000' or 'TBD')",
+      "purchaseTerms": "string (e.g., 'Seller carry note of $500,000 at 8% for 5 years, $1,000,000 cash at close.' Keep this concise but detailed.)",
       "earnestMoney": "string (e.g., '50,000' or 'TBD')",
       "dueDiligenceDays": "string (e.g., '30' or '60')",
       "closingDate": "string (e.g., '30 days after DD' or specific date)",

@@ -31,6 +31,7 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
   const [buyerName, setBuyerName] = useState('');
   const [businessDescription, setBusinessDescription] = useState('');
   const [purchasePrice, setPurchasePrice] = useState(loiTerms?.purchasePrice || '');
+  const [purchaseTerms, setPurchaseTerms] = useState(loiTerms?.purchaseTerms || '');
   const [earnestMoney, setEarnestMoney] = useState(loiTerms?.earnestMoney || '');
   const [dueDiligenceDays, setDueDiligenceDays] = useState(loiTerms?.dueDiligenceDays || '30');
   const [closingDate, setClosingDate] = useState(loiTerms?.closingDate || '');
@@ -40,6 +41,7 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
   useEffect(() => {
     if (loiTerms) {
       setPurchasePrice(loiTerms.purchasePrice || '');
+      setPurchaseTerms(loiTerms.purchaseTerms || '');
       setEarnestMoney(loiTerms.earnestMoney || '');
       setDueDiligenceDays(loiTerms.dueDiligenceDays || '30');
       setClosingDate(loiTerms.closingDate || '');
@@ -233,6 +235,10 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
                 <input type="text" value={purchasePrice} onChange={e => setPurchasePrice(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:border-amber-400 focus:outline-none" placeholder="e.g., 1,500,000" />
               </div>
               <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Purchase Terms</label>
+                <textarea rows={3} value={purchaseTerms} onChange={e => setPurchaseTerms(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:border-amber-400 focus:outline-none" placeholder="e.g., Seller carry note of $500k at 8% for 5 years." />
+              </div>
+              <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Earnest Money Deposit ($)</label>
                 <input type="text" value={earnestMoney} onChange={e => setEarnestMoney(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:border-amber-400 focus:outline-none" placeholder="e.g., 50,000" />
               </div>
@@ -397,35 +403,42 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
             </div>
 
             <div>
-              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">2. Earnest Money Deposit</h4>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">2. Purchase Terms</h4>
+              <p>
+                The terms of the purchase shall be as follows: <strong>{purchaseTerms || '[Purchase Terms]'}</strong>.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">3. Earnest Money Deposit</h4>
               <p>
                 Upon execution of a definitive Purchase Agreement, Buyer shall deposit <strong>${earnestMoney || '[Earnest Money]'}</strong> into escrow as an earnest money deposit.
               </p>
             </div>
 
             <div>
-              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">3. Due Diligence</h4>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">4. Due Diligence</h4>
               <p>
                 Buyer shall have a period of <strong>{dueDiligenceDays || '[X]'} days</strong> following the execution of this LOI to conduct legal, financial, and operational due diligence.
               </p>
             </div>
 
             <div>
-              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">4. Closing Date</h4>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">5. Closing Date</h4>
               <p>
                 The parties anticipate closing the transaction on or before <strong>{closingDate || '[Closing Date]'}</strong>, subject to the satisfaction of all closing conditions.
               </p>
             </div>
 
             <div>
-              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">5. Transition and Training</h4>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">6. Transition and Training</h4>
               <p>
                 Seller agrees to provide training and transition assistance to Buyer for a period of <strong>{trainingPeriod || '[Training Period]'}</strong> following the closing at no additional cost.
               </p>
             </div>
 
             <div>
-              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">6. Non-Compete Agreement</h4>
+              <h4 className="font-bold mb-2 uppercase text-sm tracking-wider">7. Non-Compete Agreement</h4>
               <p>
                 Seller agrees not to compete with the Business within a reasonable geographic radius for a period of <strong>{nonCompetePeriod || '[Non-Compete Period]'}</strong> following the closing.
               </p>

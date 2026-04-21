@@ -18,6 +18,7 @@ export interface DealFile {
 
 export interface LOITerms {
   purchasePrice: string;
+  purchaseTerms: string;
   earnestMoney: string;
   dueDiligenceDays: string;
   closingDate: string;
