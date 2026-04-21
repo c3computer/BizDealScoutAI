@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { InvestorProfile, User } from '../types';
 import { auth, db, signInWithGoogle, logoutUser } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 import { Team } from '../types';
 
@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: firebaseUser.email || 'no-email@example.com',
               name: firebaseUser.displayName || 'User',
               teamId,
-              updatedAt: new Date()
+              updatedAt: serverTimestamp()
             };
             
             if (firebaseUser.photoURL) {
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             
             if (!userDoc.exists()) {
-              userData.createdAt = new Date();
+              userData.createdAt = serverTimestamp();
             }
 
             await setDoc(doc(db, 'users', firebaseUser.uid), userData, { merge: true });
@@ -78,11 +78,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               tier: 'SOLOPRENEUR',
               memberIds: [firebaseUser.uid],
               ownerId: firebaseUser.uid,
-              updatedAt: new Date()
+              updatedAt: serverTimestamp()
             };
             
             if (!userDoc.exists()) {
-              teamData.createdAt = new Date();
+              teamData.createdAt = serverTimestamp();
             }
 
             await setDoc(doc(db, 'teams', teamId), teamData, { merge: true });
@@ -160,7 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         await setDoc(doc(db, 'users', user.id), {
           profile,
-          updatedAt: new Date()
+          updatedAt: serverTimestamp()
         }, { merge: true });
         
         setUser({ ...user, profile });

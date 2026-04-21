@@ -14,9 +14,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ files, onFilesChange
 
   const getLimits = () => {
     const tier = team?.tier || 'SOLOPRENEUR';
-    if (tier === 'M_AND_A') return { maxFiles: 100, maxMb: 50 };
-    if (tier === 'FAMILY_OFFICE') return { maxFiles: 20, maxMb: 20 };
-    return { maxFiles: 5, maxMb: 5 }; // SOLOPRENEUR limits
+    if (tier === 'M_AND_A') return { maxFiles: 100, maxMb: 100 };
+    if (tier === 'FAMILY_OFFICE') return { maxFiles: 50, maxMb: 50 };
+    return { maxFiles: 20, maxMb: 50 };
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {

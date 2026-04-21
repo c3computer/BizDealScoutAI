@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { storage, db } from '../firebase';
 import { LOITerms } from '../types';
 
@@ -169,7 +169,7 @@ export const LOIWalkthroughModal: React.FC<LOIWalkthroughModalProps> = ({ isOpen
         dealId,
         pdfUrl: result.dataUrl,
         sellerName: initialData.sellerName || 'Unknown Seller',
-        sentAt: new Date(),
+        sentAt: serverTimestamp(),
         opens: 0,
         views: 0
       });

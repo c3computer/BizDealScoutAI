@@ -1,6 +1,6 @@
 import { User, CachedDealEntry, SavedDealReference, DealOpportunity, AnalysisResult, CalculatedMetrics, PopulatedSavedDeal, CrmData, DealFile, ChatMessage } from "../types";
 import { db, storage } from '../firebase';
-import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // --- HELPERS ---
@@ -114,7 +114,7 @@ export const dataService = {
           dealId,
           role: chat.role,
           text: chat.text,
-          timestamp: new Date(chat.timestamp)
+          timestamp: serverTimestamp()
         });
       }));
 
@@ -303,13 +303,13 @@ export const dataService = {
         metrics: finalMetrics,
         crm: crm || defaultCrm(),
         personalNotes: personalNotes || '',
-        updatedAt: new Date()
+        updatedAt: serverTimestamp()
       });
 
       // Only set savedAt if it's a new deal, otherwise let merge preserve it
       const finalPayload = {
         ...dealPayload,
-        ...(dealSnap.exists() ? {} : { savedAt: new Date() })
+        ...(dealSnap.exists() ? {} : { savedAt: serverTimestamp() })
       };
 
       await setDoc(dealRef, finalPayload, { merge: true });
