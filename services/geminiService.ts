@@ -160,12 +160,14 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
       });
     } catch (e) {
       console.error(`Failed to fetch file ${file.name} from Storage`, e);
-      throw new Error(`Failed to download file ${file.name} for analysis.`);
+      console.warn(`Failed to download file ${file.name} for analysis. Skipping.`);
+      return null;
     }
   }
 
   if (!fileData) {
-    throw new Error(`File ${file.name} has no data and no download URL.`);
+    console.warn(`File ${file.name} has no data and no download URL. Skipping.`);
+    return null;
   }
 
   // Handle .docx files using mammoth
@@ -197,26 +199,43 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
     }
   }
 
-  // For all other files (PDF, images, etc.), upload to Gemini File API to cache the URI
-  // This prevents sending large base64 strings on every chat message
+  // Upload to server-side proxy which uses Gemini File API
   try {
-    console.log(`Uploading ${file.name} to Gemini File API for caching...`);
-    // Convert base64 back to Blob efficiently using fetch
-    const base64Response = await fetch(`data:${file.mimeType};base64,${fileData}`);
-    const blob = await base64Response.blob();
+    console.log(`Uploading ${file.name} to Gemini File API via proxy...`);
     
-    const uploadRes = await ai.files.upload({ file: blob as any, mimeType: file.mimeType });
-    console.log(`Successfully uploaded ${file.name} to Gemini File API: ${uploadRes.uri}`);
+    // Ensure we're using the correct base URL
+    const baseUrl = window.location.origin;
     
-    file.geminiFileUri = uploadRes.uri; // Cache it
+    const uploadRes = await fetch(`${baseUrl}/api/gemini/upload`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Make sure we pass the clean base64 data to our server
+      body: JSON.stringify({
+        fileData: fileData.includes('base64,') ? fileData : `data:${file.mimeType};base64,${fileData}`,
+        mimeType: file.mimeType,
+        displayName: file.name
+      })
+    });
+    
+    if (!uploadRes.ok) {
+      const errText = await uploadRes.text();
+      throw new Error(errText);
+    }
+    
+    const { uri } = await uploadRes.json();
+    console.log(`Successfully uploaded ${file.name} via proxy: ${uri}`);
+    
+    file.geminiFileUri = uri; // Cache it
     return {
       fileData: {
-        fileUri: uploadRes.uri,
+        fileUri: uri,
         mimeType: file.mimeType
       }
     };
   } catch (e) {
-    console.error(`Failed to upload ${file.name} to Gemini File API, falling back to inline data:`, e);
+    console.error(`Failed to upload ${file.name} via Gemini File API proxy, falling back to inline data:`, e);
     // Fallback to inline data if upload fails
     return {
       inlineData: {
@@ -418,136 +437,7 @@ IMPORTANT RULES FOR DEAL TERMS:
 - If the LOI or Chat History states we are offering the seller $300k cash, your structure CANNOT offer seller financing. You must raise the $300k cash from investors or lenders.
 - Assume the Earnest Money Deposit (EMD) is $0 unless an EMD amount is explicitly stipulated in the LOI offer or chat history. There is not always an EMD on business buying.
 - ONLY list or reference "The Morby Method" (Pre-Transfer Refinance) if it is actively being used in the specific deal structure being proposed. Do not assume every offer will begin with a Morby Method Refi. If it is not being used, do not mention it.
-
-If the Morby Method IS being used, here is the methodology to reference for tax savings:
-# The Morby Method Applied to Business Acquisition
-
-This is a legitimate and powerful structure. Let me break down exactly what's happening mechanically, then show you the tax math you can put in front of the seller.
-
----
-
-## The Core Mechanic: Refi Before Transfer
-
-The seller's instinct is to **sell** the business for $2M. The strategy is to reframe the transaction so that the **LLC borrows** $1M before the transfer, then the seller only "sells" $1M — not $2M. Since loan proceeds are not taxable income, the seller pockets the first $1M completely tax-free.
-
----
-
-## Deal Structure Step-by-Step
-
-### What the Seller Originally Wanted:
-| Component | Amount | Terms |
-|---|---|---|
-| Down Payment | $1,000,000 | At close |
-| Seller Carry Note | $1,000,000 | 5 yrs @ 8% |
-| **Total** | **$2,000,000** | |
-
----
-
-### The Reframed Structure:
-
-**Step 1 — The LLC Takes a Business Loan (Pre-Transfer)**
-- The bakery LLC applies for a **$1M business term loan** (against its assets, cash flow, and SDE)
-- An SDE of $1M/year makes this business highly bankable — most lenders will look at a 3–4x SDE multiple for collateral, so a $1M loan against a $2M+ asset is very serviceable
-- The **seller receives $1M in loan proceeds directly from the LLC** before ownership changes hands
-- This is a **distribution or management fee** from the LLC — **not a sale**, therefore **not a capital gains event**
-- The $1M is **received tax-free** (debt is not income)
-
-**Step 2 — Buyer Acquires the LLC Membership Interest**
-- Instead of selling the *assets* of the bakery, the seller transfers his **LLC membership interest** to you
-- The sale price for the membership interest is now **$1M** (not $2M — because the LLC just borrowed $1M and distributed it to the seller)
-- You, the buyer, now **own the LLC** — which means you now **own the loan obligation** as well
-- You make the loan payments from the business's cash flow
-
-**Step 3 — Seller Carries the Remaining $1M**
-- The seller holds a **$1M seller carry note** at 8% over 5 years
-- Monthly payment: approximately **$20,276/month**
-- This note is reported on the **installment sale method**, spreading his taxable gain over 5 years — not all in year one
-
----
-
-## The Tax Comparison (This Is Your Pitch)
-
-Assume the seller's **original basis in the LLC is ~$200,000** (common for a bakery built over time — equipment, leasehold, etc.).
-
-### ❌ Traditional Sale (What He Thinks He Wants)
-
-| Item | Amount |
-|---|---|
-| Total Sale Price | $2,000,000 |
-| Adjusted Basis | ($200,000) |
-| **Taxable Capital Gain** | **$1,800,000** |
-| Federal Long-Term Cap Gains (20%) | $360,000 |
-| Net Investment Income Tax (3.8%) | $68,400 |
-| **Total Federal Tax Owed** | **$428,400** |
-| **Net In His Pocket** | **$1,571,600** |
-
-> Florida has no state income tax, so this is his full exposure — but this is still brutal.
-
----
-
-### ✅ Morby Method Structure (What You're Offering)
-
-| Item | Amount |
-|---|---|
-| LLC Loan Proceeds Received (Tax-Free) | $1,000,000 |
-| Seller Carry Note (Installment Sale) | $1,000,000 |
-| **Adjusted Basis** | ($200,000) |
-| **Taxable Gain on the Installment Sale** | **$800,000** |
-| Federal Long-Term Cap Gains (20%) | $160,000 |
-| Net Investment Income Tax (3.8%) | $30,400 |
-| **Total Federal Tax Owed** | **$190,400** |
-| **Net In His Pocket** | **$1,809,600** |
-
----
-
-## The Number That Closes the Conversation
-
-| | Traditional Sale | Morby Structure |
-|---|---|---|
-| Gross Proceeds | $2,000,000 | $2,000,000 |
-| Tax Paid | $428,400 | $190,400 |
-| **Net to Seller** | **$1,571,600** | **$1,809,600** |
-| **Difference** | | **+$238,000** |
-
-**You're not asking him to take less. You're showing him how to keep $238,000 more of what he already negotiated — while you get the same deal.**
-
----
-
-## How the SDE Makes This Work for You
-
-With **$1M+ SDE** annually, here's your debt service reality check:
-
-| Obligation | Annual Payment |
-|---|---|
-| Business Loan ($1M, ~7%, 10yr) | ~$139,200/yr |
-| Seller Carry ($1M, 8%, 5yr) | ~$243,312/yr |
-| **Total Annual Debt Service** | **~$382,512/yr** |
-| SDE Available | $1,000,000+ |
-| **Cash Flow After Debt** | **~$617,488/yr** |
-
-Your **DSCR (Debt Service Coverage Ratio)** is approximately **2.6x** — extremely bankable and very comfortable.
-
----
-
-## Important Structuring Notes to Protect Everyone
-
-There are a few things that need to be handled carefully with a CPA and business attorney:
-
-**Step Transaction Doctrine** — The IRS can collapse a refinance and a sale into one transaction if they're too close in time or appear coordinated. The refinance should have business justification independent of the sale (equipment purchase, working capital, etc.), and there should be a reasonable time buffer between the loan closing and the membership transfer.
-
-**The Loan Terms** — If you go SBA, be aware that SBA 7(a) loans have change-of-ownership provisions that require lender notification. A conventional business term loan or a private/hard money bridge may be cleaner for this structure.
-
-**Installment Sale Agreement** — The seller carry note needs to be properly documented with a promissory note, a personal guarantee from you, and ideally a UCC-1 filing against the LLC assets as collateral for the seller.
-
-**LLC Operating Agreement** — The membership interest transfer needs to be reflected in an amended operating agreement and any required state filings.
-
----
-
-## The One-Liner to Open the Conversation
-
-> *"You told me you want $2M. I'm not asking you to take less. I'm showing you a structure where you walk away with $238,000 more than a traditional sale — and your accountant can verify every number before we sign anything."*
-
-That framing gets you past the ego of a seller who's anchored on his original terms, because you're not fighting his number — you're improving his outcome.
+- Do NOT include any tax calculation tables or exact tax figures. Simply explain the overarching tax strategy (like mitigating capital gains) without inserting incorrect numbers.
 
 INVESTOR PROFILE:
 ${JSON.stringify(profile, null, 2)}

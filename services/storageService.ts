@@ -15,6 +15,10 @@ const removeUndefined = (obj: any): any => {
   if (obj instanceof Date) {
     return obj;
   }
+  // Check if it's a Firestore FieldValue (they usually have internal properties we don't want to strip into plain objects)
+  if (typeof obj === 'object' && obj._methodName) {
+    return obj;
+  }
   if (Array.isArray(obj)) {
     return obj.map(removeUndefined);
   }
@@ -307,9 +311,10 @@ export const dataService = {
         analysis: finalAnalysis,
         metrics: finalMetrics,
         crm: crm || defaultCrm(),
-        personalNotes: personalNotes || '',
-        updatedAt: serverTimestamp()
+        personalNotes: personalNotes || ''
       });
+      // Important: Add Firebase field values AFTER removeUndefined so they aren't stripped of their class identity
+      dealPayload.updatedAt = serverTimestamp();
 
       // Only set savedAt if it's a new deal or missing from existing document, otherwise let merge preserve it
       const finalPayload = {

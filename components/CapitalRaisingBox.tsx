@@ -402,6 +402,7 @@ Then proceed with the rest of the Memorandum of Investment Strategy.`;
         deal={deal}
         loi={loiTerms}
         profile={profile}
+        financialStructureMarkdown={financialStructureMarkdown}
       />
     </div>
   );

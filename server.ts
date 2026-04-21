@@ -3,14 +3,52 @@ import fs from "fs";
 import path from "path";
 import cors from "cors";
 import { Resend } from 'resend';
+import { GoogleGenAI } from "@google/genai";
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.resolve(process.cwd(), "dist/index.html"));
+
+// Gemini File API Proxy
+app.post("/api/gemini/upload", async (req, res) => {
+  try {
+    const { fileData, mimeType, displayName } = req.body;
+    if (!fileData || !mimeType) {
+      return res.status(400).json({ error: "fileData and mimeType are required" });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY || '';
+    if (!apiKey) {
+      return res.status(500).json({ error: "Gemini API key is not configured on the server." });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    // Convert base64 to buffer
+    const base64Data = fileData.split(',').pop();
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    // We can write to a temporary file, or create a Blob-like object but the Node SDK supports uploading files.
+    // Alternatively write to tmp
+    const tmpPath = path.resolve("/tmp", `upload-${Date.now()}`);
+    fs.writeFileSync(tmpPath, buffer);
+
+    const uploadRes = await ai.files.upload({ file: tmpPath, mimeType, displayName });
+    
+    // Clean up
+    fs.unlinkSync(tmpPath);
+
+    res.json({ uri: uploadRes.uri, name: uploadRes.name });
+  } catch (err: any) {
+    console.error("Failed to proxy Gemini upload:", err);
+    res.status(500).json({ error: err.message || "Failed to upload file" });
+  }
+});
 
 const DB_FILE = isProduction 
   ? path.resolve("/tmp", "deals_db.json") 

@@ -1,15 +1,172 @@
 import ExcelJS from 'exceljs';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Header, Footer } from 'docx';
 import { InvestorProfile, DealOpportunity, LOITerms } from '../types';
+import { GoogleGenAI, Type, Schema } from '@google/genai';
+
+async function parseCapitalStackFromMarkdown(markdown: string, fallbackEmd: number, fallbackAcqFee: number, purchasePrice: number, closingCosts: number) {
+  let defaultStack = [
+    { source: 'Earnest Money (Gator)', amount: fallbackEmd, terms: `$${(fallbackEmd * 2).toLocaleString()} flat return at close`, security: 'Unsecured', type: 'debt' },
+    { source: 'Acquisition Fee (GP)', amount: fallbackAcqFee, terms: 'Fee paid at closing', security: 'N/A', type: 'fee' },
+    { source: 'Private Money Lender (Tier 1)', amount: purchasePrice * 0.5, terms: '12% IO, 24-month balloon', security: '1st lien on Assets', type: 'debt' },
+    { source: 'Equity Partners (Tier 2)', amount: purchasePrice * 0.5 + closingCosts - (fallbackEmd + fallbackAcqFee), terms: '10% pref + 60% equity', security: '60% LLC ownership', type: 'equity' }
+  ];
+  if (!markdown || markdown.trim().length === 0) return defaultStack;
+
+  try {
+    const apiKey = process.env.GEMINI_API_KEY || '';
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const schema: Schema = {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          source: { type: Type.STRING, description: "Name of the funding source (e.g. 'Seller Financing', 'Private Money Lender', 'Acquisition Fee')" },
+          amount: { type: Type.NUMBER, description: "Numeric amount in dollars" },
+          terms: { type: Type.STRING, description: "Terms of the capital (e.g. '0% interest, 2 years', 'Fee paid at closing')" },
+          security: { type: Type.STRING, description: "Security or collateral (e.g. 'Unsecured', '1st lien', '60% LLC ownership')" },
+          type: { type: Type.STRING, description: "Type of capital: 'debt', 'equity', 'fee', or 'other'" }
+        },
+        required: ['source', 'amount', 'terms', 'security', 'type']
+      }
+    };
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `You are a financial analyst extracting the Capital Stack table from a pitch deck proposal. Extract the capital sources, amounts, terms, and security into a JSON array of objects.
+
+Markdown content to parse:
+"""
+${markdown}
+"""
+`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 0.1
+      }
+    });
+
+    if (response.text) {
+      const parsed = JSON.parse(response.text);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error("Failed to parse capital stack with AI, falling back to defaults", error);
+  }
+
+  return defaultStack;
+}
 
 export const generateDealProposalDocx = async (
   deal: DealOpportunity,
   loi: LOITerms | null,
-  profile: InvestorProfile
+  profile: InvestorProfile,
+  financialStructureMarkdown?: string
 ): Promise<Blob> => {
   const companyName = deal.name || 'Business Acquisition';
   const dateStr = new Date().toLocaleDateString();
   const brandColor = 'C9A84C'; // Signal Gold
+
+  // Create an array of children for the document
+  const documentChildren: any[] = [
+    new Paragraph({
+      children: [new TextRun({ text: "FINANCIAL STRUCTURE PROPOSAL", bold: true, size: 40, color: brandColor, font: "Arial" })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 1440, after: 480 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: companyName, bold: true, size: 32, font: "Arial" })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 960 }
+    }),
+    new Paragraph({
+      text: "Executive Summary",
+      heading: HeadingLevel.HEADING_1
+    }),
+    new Paragraph({
+      text: `This document outlines the proposed financial structure and capital stack for the acquisition of ${companyName}.`,
+      spacing: { after: 240 }
+    })
+  ];
+
+  // If we have AI-generated markdown, parse and append it
+  if (financialStructureMarkdown && financialStructureMarkdown.trim().length > 0) {
+    const lines = financialStructureMarkdown.split('\n');
+    let isInList = false;
+
+    for (const line of lines) {
+      const cleanLine = line.trim();
+      if (!cleanLine) continue;
+
+      if (cleanLine.startsWith('# ')) {
+        documentChildren.push(new Paragraph({
+          text: cleanLine.replace('# ', '').replace(/\*\*/g, ''),
+          heading: HeadingLevel.HEADING_1
+        }));
+      } else if (cleanLine.startsWith('## ')) {
+        documentChildren.push(new Paragraph({
+          text: cleanLine.replace('## ', '').replace(/\*\*/g, ''),
+          heading: HeadingLevel.HEADING_2
+        }));
+      } else if (cleanLine.startsWith('### ')) {
+        documentChildren.push(new Paragraph({
+          text: cleanLine.replace('### ', '').replace(/\*\*/g, ''),
+          heading: HeadingLevel.HEADING_2
+        }));
+      } else if (cleanLine.startsWith('- ') || cleanLine.startsWith('* ')) {
+        const text = cleanLine.substring(2);
+        const parts = text.split('**');
+        const runs = parts.map((part, index) => {
+          return new TextRun({ text: part, bold: index % 2 !== 0 });
+        });
+        documentChildren.push(new Paragraph({
+          children: runs,
+          bullet: { level: 0 }
+        }));
+      } else {
+        // Normal paragraph with basic bold handling
+        const parts = cleanLine.split('**');
+        const runs = parts.map((part, index) => {
+          return new TextRun({ text: part, bold: index % 2 !== 0 });
+        });
+        documentChildren.push(new Paragraph({
+          children: runs,
+          spacing: { after: 120 }
+        }));
+      }
+    }
+  } else {
+    // Fallback to the generic data if the Capital Raising box hasn't been generated
+    documentChildren.push(
+      new Paragraph({
+        text: "Deal Overview",
+        heading: HeadingLevel.HEADING_2
+      }),
+      new Paragraph({
+        text: `Purchase Price: $${(loi?.purchasePrice || deal.askingPrice || 0).toLocaleString()}`
+      }),
+      new Paragraph({
+        text: `Current Cash Flow / SDE: $${(deal.sde || deal.revenue || 150000).toLocaleString()}`
+      }),
+      new Paragraph({
+        text: "Capital Stack & Required Raise",
+        heading: HeadingLevel.HEADING_1
+      }),
+      new Paragraph({
+        text: "We are raising capital through a structured private money loan and equity syndication to cover the acquisition costs, working capital, and closing fees."
+      }),
+      new Paragraph({
+        text: "Projected Returns",
+        heading: HeadingLevel.HEADING_1
+      }),
+      new Paragraph({
+        text: "Based on our financial models, the anticipated cash-on-cash returns and final exit waterfall show strong alignment for all equity and debt partners."
+      })
+    );
+  }
 
   const doc = new Document({
     styles: {
@@ -68,50 +225,7 @@ export const generateDealProposalDocx = async (
           ]
         })
       },
-      children: [
-        new Paragraph({
-          children: [new TextRun({ text: "FINANCIAL STRUCTURE PROPOSAL", bold: true, size: 40, color: brandColor, font: "Arial" })],
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 1440, after: 480 }
-        }),
-        new Paragraph({
-          children: [new TextRun({ text: companyName, bold: true, size: 32, font: "Arial" })],
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 960 }
-        }),
-        new Paragraph({
-          text: "Executive Summary",
-          heading: HeadingLevel.HEADING_1
-        }),
-        new Paragraph({
-          text: `This document outlines the proposed financial structure and capital stack for the acquisition of ${companyName}.`,
-          spacing: { after: 240 }
-        }),
-        new Paragraph({
-          text: "Deal Overview",
-          heading: HeadingLevel.HEADING_2
-        }),
-        new Paragraph({
-          text: `Purchase Price: $${(loi?.purchasePrice || deal.askingPrice).toLocaleString()}`
-        }),
-        new Paragraph({
-          text: `Current Cash Flow / SDE: $${(deal.cashFlow || 150000).toLocaleString()}`
-        }),
-        new Paragraph({
-          text: "Capital Stack & Required Raise",
-          heading: HeadingLevel.HEADING_1
-        }),
-        new Paragraph({
-          text: "We are raising capital through a structured private money loan and equity syndication to cover the acquisition costs, working capital, and closing fees."
-        }),
-        new Paragraph({
-          text: "Projected Returns",
-          heading: HeadingLevel.HEADING_1
-        }),
-        new Paragraph({
-          text: "Based on our financial models, the anticipated cash-on-cash returns and final exit waterfall show strong alignment for all equity and debt partners."
-        })
-      ]
+      children: documentChildren
     }]
   });
 
@@ -122,7 +236,8 @@ export const generateDealProposalDocx = async (
 export const generateDealProposalExcel = async (
   deal: DealOpportunity,
   loi: LOITerms | null,
-  profile: InvestorProfile
+  profile: InvestorProfile,
+  financialStructureMarkdown?: string
 ): Promise<Blob> => {
   const wb = new ExcelJS.Workbook();
   
@@ -165,9 +280,38 @@ export const generateDealProposalExcel = async (
   ws1.getCell('A6').font = headerFont;
   ws1.mergeCells('A6:D6');
 
-  const purchasePrice = loi?.purchasePrice || deal.askingPrice;
+  const parseNumber = (val: any, fallback: number = 0) => {
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      // Find the first occurrence of a number pattern (like "$10,000" or "1000")
+      const match = val.match(/[\d,]+(\.\d+)?/);
+      if (match) {
+          const parsed = parseFloat(match[0].replace(/,/g, ''));
+          if (!isNaN(parsed)) return parsed;
+      }
+    }
+    return fallback;
+  };
+
+  const strPurchase = String(loi?.purchasePrice || deal?.askingPrice || '');
+  const purchasePriceNum = parseNumber(strPurchase, deal?.askingPrice || 0);
+  
+  let emdAmount = 1000;
+  if (loi?.earnestMoney) {
+    emdAmount = parseNumber(loi.earnestMoney, 1000);
+  }
+
+  // Parse markdown for any mention of acquisition fee and Gator terms to be smarter
+  let acqFee = purchasePriceNum * 0.02; // Default 2%
+  if (financialStructureMarkdown) {
+      const matchAcq = financialStructureMarkdown.match(/acquisition fee.*?\$?([0-9,]+)/i);
+      if (matchAcq && matchAcq[1]) {
+          acqFee = parseNumber(matchAcq[1], acqFee);
+      }
+  }
+
   ws1.getCell('A7').value = 'Purchase Price';
-  ws1.getCell('B7').value = purchasePrice;
+  ws1.getCell('B7').value = purchasePriceNum;
   ws1.getCell('B7').numFmt = '$#,##0';
   ws1.getCell('B7').font = blueInputFont;
 
@@ -184,7 +328,7 @@ export const generateDealProposalExcel = async (
   ws1.getCell('B8').font = blueInputFont;
 
   ws1.getCell('C8').value = 'Asset Arbitrage Discount';
-  ws1.getCell('D8').value = assetValue > 0 ? (assetValue - purchasePrice) / assetValue : 0;
+  ws1.getCell('D8').value = assetValue > 0 ? (assetValue - purchasePriceNum) / assetValue : 0;
   ws1.getCell('D8').numFmt = '0.0%';
 
   ws1.getCell('A9').value = 'Total Capital Required';
@@ -212,12 +356,13 @@ export const generateDealProposalExcel = async (
     cell.font = subheaderFont;
   });
 
-  const capitalStack = [
-    { source: 'Earnest Money (Gator)', amount: 1000, terms: '$2,000 flat return at close', security: 'Unsecured' },
-    { source: 'Acquisition Fee (GP)', amount: 6000, terms: '2% fee paid at closing', security: 'N/A' },
-    { source: 'Private Money Lender (Tier 1)', amount: purchasePrice * 0.5, terms: '12% IO, 24-month balloon', security: '1st lien on Assets' },
-    { source: 'Equity Partners (Tier 2)', amount: purchasePrice * 0.5 + closingCosts - 7000, terms: '10% pref + 60% equity', security: '60% LLC ownership' }
-  ];
+  const capitalStack = await parseCapitalStackFromMarkdown(
+    financialStructureMarkdown || '', 
+    emdAmount, 
+    acqFee, 
+    purchasePriceNum, 
+    closingCosts
+  );
 
   let row = 13;
   const totalFormulaParts = [];
@@ -256,7 +401,7 @@ export const generateDealProposalExcel = async (
   ws2.getCell('A3').font = subheaderFont;
   ws2.mergeCells('A3:B3');
 
-  const sde = deal.cashFlow || deal.ebitda || 150000;
+  const sde = deal.sde || deal.revenue || 150000;
   ws2.getCell('A4').value = 'Current SDE';
   ws2.getCell('B4').value = sde;
   ws2.getCell('B4').numFmt = '$#,##0';
@@ -278,10 +423,45 @@ export const generateDealProposalExcel = async (
   ws2.getCell('A8').font = subheaderFont;
   ws2.mergeCells('A8:B8');
 
-  const debtService = [
-    { label: 'PML Debt Service (12%)', annual_amount: capitalStack[2].amount * 0.12 },
-    { label: 'Investor Preferred Return (10%)', annual_amount: capitalStack[3].amount * 0.10 }
-  ];
+  let debtService: any[] = [];
+  const debtItems = capitalStack.filter((item: any) => item.type === 'debt' || String(item.source).toLowerCase().includes('lender') || String(item.terms).includes('%'));
+  
+  if (debtItems.length > 0) {
+    debtItems.forEach((item: any) => {
+      // Find a percentage in the terms
+      const match = String(item.terms).match(/(\d+(?:\.\d+)?)%/);
+      let rate = 0.12; // default 12%
+      if (match && match[1]) {
+        rate = parseFloat(match[1]) / 100;
+      }
+      debtService.push({
+        label: `${item.source} Debt Service`,
+        annual_amount: (item.amount || purchasePriceNum * 0.5) * rate
+      });
+    });
+  } else {
+    debtService = [
+      { label: 'PML Debt Service (12%)', annual_amount: purchasePriceNum * 0.5 * 0.12 }
+    ];
+  }
+
+  // Also add Preferred Return if there is an equity item with preferred return
+  const equityItems = capitalStack.filter((item: any) => item.type === 'equity' || String(item.source).toLowerCase().includes('equity'));
+  if (equityItems.length > 0) {
+    equityItems.forEach((item: any) => {
+      const prefMatch = String(item.terms).match(/(\d+(?:\.\d+)?)%\s*pref/i);
+      if (prefMatch && prefMatch[1]) {
+        const rate = parseFloat(prefMatch[1]) / 100;
+        debtService.push({
+          label: `${item.source} Preferred Return`,
+          annual_amount: item.amount * rate
+        });
+      }
+    });
+  } else {
+    // If no equity items parsed, put default
+    debtService.push({ label: 'Investor Preferred Return (10%)', annual_amount: purchasePriceNum * 0.5 * 0.10 });
+  }
 
   row = 9;
   const debtCells = [];
@@ -460,10 +640,20 @@ export const generateDealProposalExcel = async (
   });
   row++;
 
-  const waterfall = [
-    { payee: 'Senior Debt Payoff', amount: purchasePrice * 0.8 },
-    { payee: 'Return Equity Partner Capital', amount: capitalStack[3].amount }
-  ];
+  let waterfall: any[] = [];
+  if (debtItems.length > 0) {
+    waterfall.push({ payee: 'Senior Debt Payoff', amount: debtItems.reduce((acc, curr) => acc + (curr.amount || 0), 0) });
+  } else {
+    waterfall.push({ payee: 'Senior Debt Payoff', amount: purchasePriceNum * 0.8 });
+  }
+
+  if (equityItems.length > 0) {
+    waterfall.push({ payee: 'Return Equity Partner Capital', amount: equityItems.reduce((acc, curr) => acc + (curr.amount || 0), 0) });
+  } else {
+    if (capitalStack[3] && capitalStack[3].amount) {
+      waterfall.push({ payee: 'Return Equity Partner Capital', amount: capitalStack[3].amount });
+    }
+  }
 
   let priority = 1;
   const waterfallDeductions = [];
@@ -485,7 +675,21 @@ export const generateDealProposalExcel = async (
   const remainingRow = row;
   row += 2;
 
-  const split = { gp_pct: 0.70, lp_pct: 0.30 };
+  let split = { gp_pct: 0.70, lp_pct: 0.30 };
+  if (equityItems.length > 0) {
+    let lpTotalPct = 0;
+    equityItems.forEach((item: any) => {
+      const match = String(item.terms).match(/(\d+(?:\.\d+)?)%\s*equity/i);
+      if (match && match[1]) {
+        lpTotalPct += parseFloat(match[1]) / 100;
+      }
+    });
+
+    if (lpTotalPct > 0) {
+      split = { gp_pct: 1 - lpTotalPct, lp_pct: lpTotalPct };
+    }
+  }
+
   ws3.getCell(`A${row}`).value = 'SPLIT OF REMAINING PROCEEDS';
   ws3.getCell(`A${row}`).fill = subheaderFill;
   ws3.getCell(`A${row}`).font = subheaderFont;

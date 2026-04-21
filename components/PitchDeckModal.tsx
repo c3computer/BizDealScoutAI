@@ -8,6 +8,7 @@ interface PitchDeckModalProps {
   deal: DealOpportunity;
   loi: LOITerms | null;
   profile: InvestorProfile;
+  financialStructureMarkdown?: string;
 }
 
 export const PitchDeckModal: React.FC<PitchDeckModalProps> = ({ 
@@ -15,7 +16,8 @@ export const PitchDeckModal: React.FC<PitchDeckModalProps> = ({
   onClose,
   deal,
   loi,
-  profile
+  profile,
+  financialStructureMarkdown
 }) => {
   const [isGeneratingDocx, setIsGeneratingDocx] = useState(false);
   const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
@@ -23,7 +25,7 @@ export const PitchDeckModal: React.FC<PitchDeckModalProps> = ({
   const handleDownloadExcel = async () => {
     setIsGeneratingExcel(true);
     try {
-      const blob = await generateDealProposalExcel(deal, loi, profile);
+      const blob = await generateDealProposalExcel(deal, loi, profile, financialStructureMarkdown);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -43,7 +45,7 @@ export const PitchDeckModal: React.FC<PitchDeckModalProps> = ({
   const handleDownloadDocx = async () => {
     setIsGeneratingDocx(true);
     try {
-      const blob = await generateDealProposalDocx(deal, loi, profile);
+      const blob = await generateDealProposalDocx(deal, loi, profile, financialStructureMarkdown);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
