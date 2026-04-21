@@ -119,7 +119,12 @@ export const dataService = {
       }));
 
       // 3. Update deal with files metadata
-      await setDoc(dealRef, { files: updatedFiles }, { merge: true });
+      // Ensure we do not save bloated files (like base64 data or extracted text) into Firestore 1MB limits
+      const firestoreFiles = updatedFiles.map(f => {
+        const { data, extractedText, ...rest } = f;
+        return rest;
+      });
+      await setDoc(dealRef, { files: firestoreFiles }, { merge: true });
 
       return updatedFiles;
     } catch (e) {

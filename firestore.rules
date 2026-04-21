@@ -57,6 +57,7 @@ service cloud.firestore {
              (!('metrics' in data) || data.metrics is map) &&
              (!('crm' in data) || data.crm is map) &&
              (!('personalNotes' in data) || (data.personalNotes is string && data.personalNotes.size() < 10000)) &&
+             (!('files' in data) || data.files is list) &&
              data.savedAt is timestamp &&
              data.updatedAt is timestamp;
     }
@@ -168,7 +169,7 @@ service cloud.firestore {
         allow update: if (isOwner(userId) || isTeamMemberOf(userId)) && isValidDeal(incoming(), userId) &&
                       incoming().userId == existing().userId &&
                       incoming().savedAt == existing().savedAt &&
-                      incoming().diff(existing()).affectedKeys().hasOnly(['url', 'dealData', 'analysis', 'metrics', 'crm', 'personalNotes', 'updatedAt']);
+                      incoming().diff(existing()).affectedKeys().hasOnly(['url', 'dealData', 'analysis', 'metrics', 'crm', 'personalNotes', 'updatedAt', 'files']);
                       
         allow delete: if isOwner(userId) || isTeamMemberOf(userId);
 
