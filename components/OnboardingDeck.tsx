@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { InvestorProfile } from '../types';
+import { VoiceInterviewer } from './VoiceInterviewer';
 
 interface OnboardingDeckProps {
   onComplete: (profile: InvestorProfile, playbookAnswers: Record<string, string>) => void;
@@ -7,16 +8,16 @@ interface OnboardingDeckProps {
 }
 
 const STEPS = [
-  { id: 'welcome', title: 'Welcome', icon: '✨' },
-  { id: 'goals', title: 'Your Goals', icon: '🎯' },
-  { id: 'mustHaves', title: 'Must Haves', icon: '✅' },
-  { id: 'superpowers', title: 'Superpowers', icon: '⚡' },
-  { id: 'time', title: 'Time Commitment', icon: '⏱️' },
-  { id: 'financing', title: 'Financing', icon: '💰' },
-  { id: 'operations', title: 'Operations', icon: '⚙️' },
-  { id: 'sourcing', title: 'Sourcing', icon: '🔍' },
-  { id: 'team', title: 'Deal Team', icon: '👥' },
-  { id: 'complete', title: 'Complete', icon: '🎉' },
+  { id: 'welcome', title: 'Welcome', icon: '✨', prompt: '' },
+  { id: 'goals', title: 'Your Goals', icon: '🎯', prompt: 'What are your Financial Goals? Like target annual sales or SDE.' },
+  { id: 'mustHaves', title: 'Must Haves', icon: '✅', prompt: 'What are your Must-Haves? Like specific industries or locations.' },
+  { id: 'superpowers', title: 'Superpowers', icon: '⚡', prompt: 'What are your Superpowers? Any unique skills you bring?' },
+  { id: 'time', title: 'Time Commitment', icon: '⏱️', prompt: 'How much time can you dedicate to sourcing and diligence?' },
+  { id: 'financing', title: 'Financing', icon: '💰', prompt: 'What is your preferred financing method?' },
+  { id: 'operations', title: 'Operations', icon: '⚙️', prompt: 'What is your post-close operational strategy?' },
+  { id: 'sourcing', title: 'Sourcing', icon: '🔍', prompt: 'How do you plan to source deals?' },
+  { id: 'team', title: 'Deal Team', icon: '👥', prompt: 'Do you have a deal team in place?' },
+  { id: 'complete', title: 'Complete', icon: '🎉', prompt: '' },
 ];
 
 export const OnboardingDeck: React.FC<OnboardingDeckProps> = ({ onComplete, initialProfile }) => {
@@ -355,6 +356,19 @@ export const OnboardingDeck: React.FC<OnboardingDeckProps> = ({ onComplete, init
               Question {currentStepIndex} of {STEPS.length - 1} • {progress}% complete
             </p>
           </div>
+          
+          {/* Voice Interviewer */}
+          {currentStep.id !== 'welcome' && currentStep.id !== 'complete' && (
+            <div className="hidden sm:block mr-4 scale-90 origin-right">
+                <VoiceInterviewer 
+                    currentStepId={currentStep.id}
+                    onSaveAnswer={handleUpdateAnswer}
+                    onNext={handleNext}
+                    steps={STEPS}
+                />
+            </div>
+          )}
+
           <div className="w-1/3 md:w-1/4 bg-slate-800 h-1 rounded-full overflow-hidden ml-4">
             <div 
               className="bg-amber-400 h-full transition-all duration-500 ease-out"
@@ -362,6 +376,18 @@ export const OnboardingDeck: React.FC<OnboardingDeckProps> = ({ onComplete, init
             ></div>
           </div>
         </div>
+        
+        {/* Mobile Voice Interviewer (shows below header on very small screens) */}
+        {currentStep.id !== 'welcome' && currentStep.id !== 'complete' && (
+            <div className="sm:hidden flex justify-center py-3 border-b border-slate-700/50 bg-slate-800/20 z-10">
+                <VoiceInterviewer 
+                    currentStepId={currentStep.id}
+                    onSaveAnswer={handleUpdateAnswer}
+                    onNext={handleNext}
+                    steps={STEPS}
+                />
+            </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto z-10 flex flex-col p-4 md:p-8">

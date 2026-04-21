@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { DealFile } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FileUploaderProps {
   files: DealFile[];
@@ -9,13 +10,34 @@ interface FileUploaderProps {
 
 export const FileUploader: React.FC<FileUploaderProps> = ({ files, onFilesChange }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { team } = useAuth();
+
+  const getLimits = () => {
+    const tier = team?.tier || 'SOLOPRENEUR';
+    if (tier === 'M_AND_A') return { maxFiles: 100, maxMb: 50 };
+    if (tier === 'FAMILY_OFFICE') return { maxFiles: 20, maxMb: 20 };
+    return { maxFiles: 5, maxMb: 5 }; // SOLOPRENEUR limits
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
+      const { maxFiles, maxMb } = getLimits();
+      const maxBytes = maxMb * 1024 * 1024;
+      
+      if (files.length + e.target.files.length > maxFiles) {
+        alert(`Your current tier limits you to ${maxFiles} files per deal. Please upgrade for more capacity.`);
+        return;
+      }
+
       const newFiles: DealFile[] = [];
       
       for (let i = 0; i < e.target.files.length; i++) {
         const file = e.target.files[i];
+        
+        if (file.size > maxBytes) {
+           alert(`File ${file.name} is too large. Your tier allows up to ${maxMb}MB per file.`);
+           continue;
+        }
         
         // Check for Excel files
         if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.type.includes('spreadsheet') || file.type.includes('excel')) {
@@ -86,11 +108,18 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ files, onFilesChange
     onFilesChange(updated);
   };
 
+  const { maxFiles, maxMb } = getLimits();
+
   return (
     <div className="mb-4">
-      <label className="block text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
-        Deal Documents (CIM, P&L, Images, Excel)
-      </label>
+      <div className="flex justify-between items-end mb-2">
+        <label className="block text-slate-400 text-xs font-bold uppercase tracking-wider">
+          Deal Documents (CIM, P&L, Images, Excel)
+        </label>
+        <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+          {files.length} / {maxFiles} Files (Max {maxMb}MB/file)
+        </span>
+      </div>
       
       <div className="grid grid-cols-1 gap-2 mb-2">
         {files.map((file, idx) => (

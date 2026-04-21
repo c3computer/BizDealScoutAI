@@ -29,9 +29,13 @@ import { CrmTracker } from './components/CrmTracker';
 import { PlaybookGenerator } from './components/PlaybookGenerator';
 import { OnboardingDeck } from './components/OnboardingDeck';
 import { LOIViewer } from './components/LOIViewer';
+import { PricingModal } from './components/PricingModal';
+import { AuditLogsModal } from './components/AuditLogsModal';
 
 const App: React.FC = () => {
-  const { user, logout, updateUserProfile, syncData, isSyncing, syncError } = useAuth();
+  const { user, team, logout, updateUserProfile, syncData, isSyncing, syncError } = useAuth();
+
+
   
   const [deal, setDeal] = useState<DealOpportunity>({
     listingUrl: '',
@@ -72,12 +76,22 @@ const App: React.FC = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [playbookModalOpen, setPlaybookModalOpen] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(true); // Assume true initially to avoid flicker
 
   // Check for LOI Viewer Route
   const urlParams = new URLSearchParams(window.location.search);
   const loiIdParam = urlParams.get('loi');
+  const mockSuccessParam = urlParams.get('success') === 'true';
+  const [mockSessionActive, setMockSessionActive] = useState(mockSuccessParam);
+
+  if (mockSuccessParam && !mockSessionActive) {
+     setMockSessionActive(true);
+     // Clean up URL
+     window.history.replaceState({}, document.title, window.location.pathname);
+  }
   
   if (loiIdParam) {
     return <LOIViewer loiId={loiIdParam} />;
@@ -418,6 +432,11 @@ const App: React.FC = () => {
       const { extractLOITerms } = await import('./services/geminiService');
       const terms = await extractLOITerms(chatMessages);
       setLoiTerms(terms);
+      if (team?.id) {
+        import('./services/auditService').then(({ auditService }) => {
+          auditService.logAction(team.id, 'GENERATE_LOI', currentCacheId || undefined, deal.keywords || 'Generated LOI');
+        });
+      }
       return true;
     } catch (err) {
       console.error("Failed to extract terms:", err);
@@ -643,6 +662,12 @@ const App: React.FC = () => {
         setChatMessages(extraData.chatMessages);
       }
     }
+
+    if (team?.id) {
+       import('./services/auditService').then(({ auditService }) => {
+         auditService.logAction(team.id, 'VIEW_DEAL', saved.cache.id, saved.cache.dealData.keywords || 'Opened Deal');
+       });
+    }
   };
 
   // Load deal from URL if present
@@ -663,11 +688,27 @@ const App: React.FC = () => {
     }
   }, [user]);
 
+  const needsPayment = !!user && !!team && !team.stripeSubscriptionId && !team.lifetimeAccess && !mockSessionActive;
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 p-4 md:p-8 font-sans selection:bg-amber-400 selection:text-slate-900">
       
       {/* Auth Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      
+      {/* Pricing Modal / Wall */}
+      <PricingModal 
+        isOpen={pricingModalOpen || needsPayment} 
+        onClose={() => {
+           if (!needsPayment) setPricingModalOpen(false);
+        }} 
+      />
+
+      {/* Audit Logs Modal */}
+      <AuditLogsModal
+        isOpen={auditModalOpen}
+        onClose={() => setAuditModalOpen(false)}
+      />
       
       {/* Chat Presentation Modal */}
       <ChatPresentationModal 
@@ -785,6 +826,18 @@ const App: React.FC = () => {
                         Cloud Active
                    </div>
                ) : null}
+
+               {team?.tier === 'M_AND_A' && (
+                 <button 
+                  onClick={() => setAuditModalOpen(true)}
+                  className="bg-slate-700 border border-amber-600/30 hover:bg-slate-600 text-amber-400 text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded transition-colors flex items-center shadow shadow-amber-900/20"
+                 >
+                   <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                   </svg>
+                   Audit Logs
+                 </button>
+               )}
 
                <button 
                 onClick={() => setPlaybookModalOpen(true)}

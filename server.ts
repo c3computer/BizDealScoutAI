@@ -311,6 +311,191 @@ app.post("/api/send-email", async (req, res) => {
   }
 });
 
+// --- STRIPE ENDPOINTS ---
+import Stripe from 'stripe';
+import * as admin from 'firebase-admin';
+
+// Initialize Firebase Admin gracefully
+let adminDb: admin.firestore.Firestore | null = null;
+try {
+  // If FIREBASE_SERVICE_ACCOUNT is provided as a JSON string
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    adminDb = admin.firestore();
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault()
+    });
+    adminDb = admin.firestore();
+  }
+} catch (err) {
+  console.warn("Failed to initialize Firebase Admin:", err);
+}
+
+let stripeClient: Stripe | null = null;
+const getStripe = () => {
+  if (!stripeClient && process.env.STRIPE_SECRET_KEY) {
+    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY);
+  }
+  return stripeClient;
+};
+
+const TIER_PRICING = {
+  SOLOPRENEUR: { monthly: 9900, quarterly: 26700, annual: 95000, name: 'Solopreneur (1 user)' },
+  FAMILY_OFFICE: { monthly: 29900, quarterly: 80000, annual: 280000, name: 'Family Office (2-4 users)' },
+  M_AND_A: { monthly: 59900, quarterly: 160000, annual: 575000, name: 'Mergers & Acquisitions (5+ users)' }
+};
+
+app.post('/api/checkout', async (req, res) => {
+  try {
+    const stripe = getStripe();
+    if (!stripe) {
+      return res.status(400).json({ error: 'Stripe is not configured' });
+    }
+
+    const { tier, interval, teamId, userId, successUrl, cancelUrl } = req.body;
+    if (!tier || !interval || !teamId) {
+      return res.status(400).json({ error: 'Missing tier, interval, or teamId' });
+    }
+
+    const pricing = TIER_PRICING[tier as keyof typeof TIER_PRICING];
+    if (!pricing) return res.status(400).json({ error: 'Invalid tier' });
+
+    let amount = 0;
+    if (interval === 'monthly') amount = pricing.monthly;
+    else if (interval === 'quarterly') amount = pricing.quarterly;
+    else if (interval === 'annual') amount = pricing.annual;
+    else return res.status(400).json({ error: 'Invalid interval' });
+
+    let intervalCount = 1;
+    let stripeInterval: 'month' | 'year' = 'month';
+    if (interval === 'quarterly') intervalCount = 3;
+    if (interval === 'annual') stripeInterval = 'year';
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Acquisition Edge - ${pricing.name}`,
+            },
+            unit_amount: amount,
+            recurring: {
+              interval: stripeInterval,
+              interval_count: intervalCount
+            }
+          },
+          quantity: 1,
+        },
+      ],
+      client_reference_id: teamId,
+      metadata: {
+        teamId,
+        tier,
+        userId
+      },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      allow_promotion_codes: true, // Allow user to enter lifetime access promo code
+    });
+
+    res.json({ url: session.url });
+  } catch (error: any) {
+    console.error('Checkout error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Use raw body for webhook parser
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) return res.status(400).send('Stripe not configured');
+
+  const sig = req.headers['stripe-signature'] as string;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+  try {
+    if (webhookSecret) {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } else {
+      event = JSON.parse(req.body);
+    }
+  } catch (err: any) {
+    console.error('Webhook signature verification failed.', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      console.log(`Checkout completed for Team ID: ${session.client_reference_id}`);
+      
+      const teamId = session.client_reference_id;
+      const tier = session.metadata?.tier;
+      
+      if (teamId && adminDb) {
+        await adminDb.collection('teams').doc(teamId).update({
+          stripeSubscriptionId: session.subscription as string || session.id,
+          tier: tier || 'SOLOPRENEUR',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        console.log(`Updated team ${teamId} subscription successfully.`);
+      } else {
+        console.warn(`Could not update team ${teamId}. Missing adminDb or teamId.`);
+      }
+    } else if (event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object as Stripe.Subscription;
+      console.log(`Subscription deleted: ${subscription.id}`);
+      
+      if (adminDb) {
+        // Find team with this subscription ID and remove it
+        const teamsSnapshot = await adminDb.collection('teams').where('stripeSubscriptionId', '==', subscription.id).get();
+        teamsSnapshot.forEach(doc => {
+          doc.ref.update({
+            stripeSubscriptionId: admin.firestore.FieldValue.delete(),
+            tier: 'SOLOPRENEUR',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error handling webhook event', err);
+  }
+
+  res.json({ received: true });
+});
+
+app.post('/api/debug/simulate-checkout', async (req, res) => {
+  // THIS IS FOR PROTOTYPE PREVIEW PURPOSES ONLY!
+  // Allows the frontend to force-simulate a successful checkout if admin SDK isn't present
+  const { teamId, tier } = req.body;
+  if (!teamId) return res.status(400).json({ error: 'teamId required' });
+  
+  if (adminDb) {
+    try {
+      await adminDb.collection('teams').doc(teamId).update({
+        stripeSubscriptionId: 'sub_simulated_' + Math.random().toString(36).substr(2, 9),
+        tier: tier || 'SOLOPRENEUR',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      res.json({ success: true, simulated: true, updatedViaAdmin: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  } else {
+    // If admin is not initialized, we just return a success payload and let the client manually bypass it
+    res.json({ success: true, simulated: true, updatedViaAdmin: false, warning: "Admin DB not initialized" });
+  }
+});
+
 async function startServer() {
   if (!isProduction) {
     try {

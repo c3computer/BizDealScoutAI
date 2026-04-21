@@ -1,5 +1,38 @@
 {
   "entities": {
+    "Team": {
+      "title": "Team",
+      "description": "Represents a billing account and shared workspace.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "tier": { "type": "string", "enum": ["SOLOPRENEUR", "FAMILY_OFFICE", "M_AND_A"] },
+        "stripeCustomerId": { "type": "string" },
+        "stripeSubscriptionId": { "type": "string" },
+        "lifetimeAccess": { "type": "boolean" },
+        "memberIds": { "type": "array", "items": { "type": "string" } },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "tier", "memberIds", "ownerId", "createdAt", "updatedAt"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "Tracks user actions for corporate audit trails.",
+      "type": "object",
+      "properties": {
+        "teamId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "dealId": { "type": "string" },
+        "dealName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["teamId", "userId", "userName", "action", "timestamp"]
+    },
     "UserProfile": {
       "title": "User Profile",
       "description": "Stores user data and investor profile.",
@@ -16,6 +49,7 @@
             "superpowers": { "type": "string" }
           }
         },
+        "teamId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -107,6 +141,14 @@
     "/users/{userId}/deals/{dealId}/chats/{chatId}": {
       "schema": { "$ref": "#/entities/Chat" },
       "description": "Chat messages for a deal."
+    },
+    "/teams/{teamId}": {
+      "schema": { "$ref": "#/entities/Team" },
+      "description": "Teams and organizations."
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Corporate audit trails."
     }
   }
 }

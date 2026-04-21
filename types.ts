@@ -60,6 +60,33 @@ export interface ChatMessage {
 }
 
 // --- NEW TYPES FOR AUTH & CACHING ---
+export type SubscriptionTier = 'SOLOPRENEUR' | 'FAMILY_OFFICE' | 'M_AND_A';
+
+export interface Team {
+  id: string;
+  name: string;
+  tier: SubscriptionTier;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  // If true, user got lifetime access via promo code
+  lifetimeAccess?: boolean;
+  memberIds: string[];
+  ownerId: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AuditLog {
+  id: string;
+  teamId: string;
+  userId: string;
+  userName: string;
+  action: 'LOGIN' | 'VIEW_DEAL' | 'CREATE_DEAL' | 'UPDATE_DEAL' | 'GENERATE_PITCH_DECK' | 'CREATE_LOI';
+  dealId?: string;
+  dealName?: string;
+  timestamp: number;
+  metadata?: Record<string, any>;
+}
 
 export interface User {
   id: string;
@@ -69,6 +96,7 @@ export interface User {
   googleId?: string;
   accessToken?: string; // OAuth Access Token for Drive API
   profile?: InvestorProfile; // Persisted investor profile
+  teamId?: string; // ID of the team they belong to
 }
 
 // Represents a global cache entry (shared knowledge base to save tokens)

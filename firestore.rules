@@ -53,6 +53,20 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function isTeamMemberOf(targetUserId) {
+      let myUserPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      let targetUserPath = /databases/$(database)/documents/users/$(targetUserId);
+      return isAuthenticated() && exists(myUserPath) && exists(targetUserPath) && 
+             'teamId' in get(myUserPath).data && 'teamId' in get(targetUserPath).data && 
+             get(myUserPath).data.teamId == get(targetUserPath).data.teamId;
+    }
+
+    function isTeamMember(teamId) {
+      let myUserPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isAuthenticated() && exists(myUserPath) && 
+             'teamId' in get(myUserPath).data && get(myUserPath).data.teamId == teamId;
+    }
+
     function hasRequiredFields(fields) {
       return request.resource.data.keys().hasAll(fields);
     }
@@ -134,6 +148,19 @@ service cloud.firestore {
              (!('followUp7Sent' in data) || data.followUp7Sent is bool);
     }
 
+    function isValidAuditLog() {
+      let data = request.resource.data;
+      return hasRequiredFields(['teamId', 'userId', 'userName', 'action', 'timestamp']) &&
+             data.teamId is string &&
+             data.userId is string &&
+             data.userName is string &&
+             data.action is string &&
+             (!('dealId' in data) || data.dealId == null || data.dealId is string) &&
+             (!('dealName' in data) || data.dealName == null || data.dealName is string) &&
+             (!('metadata' in data) || data.metadata == null || data.metadata is map) &&
+             data.timestamp is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -163,30 +190,43 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isOwner(userId) || isTeamMemberOf(userId);
       allow create: if isOwner(userId) && isValidUser();
-      allow update: if isOwner(userId) && isValidUser() && 
+      allow update: if (isOwner(userId) || isTeamMemberOf(userId)) && isValidUser() && 
                     request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
       match /deals/{dealId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidDeal(userId);
-        allow update: if isOwner(userId) && isValidDeal(userId) &&
+        allow read: if isOwner(userId) || isTeamMemberOf(userId);
+        allow create: if (isOwner(userId) || isTeamMemberOf(userId)) && isValidDeal(userId);
+        allow update: if (isOwner(userId) || isTeamMemberOf(userId)) && isValidDeal(userId) &&
                       request.resource.data.userId == resource.data.userId &&
                       (!('savedAt' in request.resource.data) || request.resource.data.savedAt == resource.data.savedAt);
-        allow delete: if isOwner(userId);
+        allow delete: if isOwner(userId) || isTeamMemberOf(userId);
 
         match /chats/{chatId} {
-          allow read: if isOwner(userId);
-          allow create: if isOwner(userId) && isValidChat(userId, dealId);
-          allow update: if isOwner(userId) && isValidChat(userId, dealId) &&
+          allow read: if isOwner(userId) || isTeamMemberOf(userId);
+          allow create: if (isOwner(userId) || isTeamMemberOf(userId)) && isValidChat(userId, dealId);
+          allow update: if (isOwner(userId) || isTeamMemberOf(userId)) && isValidChat(userId, dealId) &&
                         request.resource.data.userId == resource.data.userId &&
                         request.resource.data.dealId == resource.data.dealId &&
                         request.resource.data.timestamp == resource.data.timestamp;
-          allow delete: if isOwner(userId);
+          allow delete: if isOwner(userId) || isTeamMemberOf(userId);
         }
       }
+    }
+
+    match /teams/{teamId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
   }
 }
