@@ -14,6 +14,7 @@ export interface DealFile {
   storagePath?: string; // Path in Firebase Storage
   geminiFileUri?: string; // Cached URI from Gemini File API
   extractedText?: string; // Cached text extraction
+  lastModified?: number; // Added: Timestamp of last modification
 }
 
 export interface LOITerms {

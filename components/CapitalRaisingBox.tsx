@@ -66,11 +66,55 @@ export const CapitalRaisingBox: React.FC<CapitalRaisingBoxProps> = ({ profile, d
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [isPitchDeckModalOpen, setIsPitchDeckModalOpen] = useState(false);
   const [financialStructureMarkdown, setFinancialStructureMarkdown] = useState<string>('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const hiddenPrintRef = useRef<HTMLDivElement>(null);
+
+  const regenerateProposalMarkdown = async (): Promise<string> => {
+    setIsGeneratingProposal(true);
+    try {
+      const proposalMessage = `Please provide a comprehensive Deal Structure Proposal formatted as a professional document. 
+        
+Please ensure the header is formatted EXACTLY like this, with each item as its own separate paragraph (separated by blank lines) so they do not run together:
+
+**TO:** Potential Investment Partners / Private Money Lenders
+
+**FROM:** ${profile.name || '[Your Name]'}, ${profile.entityName || '[Your Entity]'}
+
+DATE: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+
+**SUBJECT:** Acquisition & Re-Capitalization Proposal: ${deal.title || deal.url}
+
+Then proceed with the rest of the Memorandum of Investment Strategy.`;
+      
+      const response = await queryCapitalRaisingChat(profile, deal, analysis, chatHistory, proposalMessage, mainChatHistory, loiTerms);
+      setFinancialStructureMarkdown(response);
+      
+      // Also add to chat history so the user sees it
+      const userMsg: ChatMessage = { role: 'user', text: proposalMessage, timestamp: Date.now() };
+      const aiMsg: ChatMessage = { role: 'model', text: response, timestamp: Date.now() };
+      setChatHistory(prev => [...prev, userMsg, aiMsg]);
+      
+      return response;
+    } catch (error: any) {
+      console.error("Error generating proposal:", error);
+      throw error;
+    } finally {
+      setIsGeneratingProposal(false);
+    }
+  };
+
+  const handleOpenPitchDeck = async () => {
+    try {
+      await regenerateProposalMarkdown();
+      setIsPitchDeckModalOpen(true);
+    } catch (error) {
+      alert("Failed to generate proposal for Pitch Deck.");
+    }
+  };
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -105,36 +149,12 @@ export const CapitalRaisingBox: React.FC<CapitalRaisingBoxProps> = ({ profile, d
     let markdownToPrint = financialStructureMarkdown;
     
     if (!markdownToPrint) {
-      setIsTyping(true);
       try {
-        const proposalMessage = `Please provide a comprehensive Deal Structure Proposal formatted as a professional document. 
-        
-Please ensure the header is formatted EXACTLY like this, with each item as its own separate paragraph (separated by blank lines) so they do not run together:
-
-**TO:** Potential Investment Partners / Private Money Lenders
-
-**FROM:** ${profile.name || '[Your Name]'}, ${profile.entityName || '[Your Entity]'}
-
-DATE: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-
-**SUBJECT:** Acquisition & Re-Capitalization Proposal: ${deal.title || deal.url}
-
-Then proceed with the rest of the Memorandum of Investment Strategy.`;
-        const response = await queryCapitalRaisingChat(profile, deal, analysis, chatHistory, proposalMessage, mainChatHistory, loiTerms);
-        setFinancialStructureMarkdown(response);
-        markdownToPrint = response;
-        
-        // Also add to chat history so the user sees it
-        const userMsg: ChatMessage = { role: 'user', text: proposalMessage, timestamp: Date.now() };
-        const aiMsg: ChatMessage = { role: 'model', text: response, timestamp: Date.now() };
-        setChatHistory(prev => [...prev, userMsg, aiMsg]);
+        markdownToPrint = await regenerateProposalMarkdown();
       } catch (error: any) {
-        console.error("Error generating proposal for print:", error);
         alert("Failed to generate proposal for printing.");
-        setIsTyping(false);
         return;
       }
-      setIsTyping(false);
     }
 
     // Force the date in the markdown to be today's date just in case
@@ -302,12 +322,12 @@ Then proceed with the rest of the Memorandum of Investment Strategy.`;
           <div className="flex flex-row w-full max-w-md justify-center space-x-4">
             <button
               onClick={handlePrint}
-              disabled={isTyping}
+              disabled={isTyping || isGeneratingProposal}
               className={`flex-1 py-2 text-sm uppercase font-display font-bold tracking-widest text-slate-900 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 rounded flex items-center justify-center space-x-2
-                  ${isTyping ? 'bg-slate-600' : 'bg-green-400 hover:bg-green-300 shadow-[0_0_15px_rgba(74,222,128,0.3)]'}
+                  ${(isTyping || isGeneratingProposal) ? 'bg-slate-600' : 'bg-green-400 hover:bg-green-300 shadow-[0_0_15px_rgba(74,222,128,0.3)]'}
               `}
             >
-              {isTyping ? (
+              {(isTyping || isGeneratingProposal) ? (
                 <span>Generating PDF...</span>
               ) : (
                 <>
@@ -320,16 +340,22 @@ Then proceed with the rest of the Memorandum of Investment Strategy.`;
             </button>
 
             <button
-              onClick={() => setIsPitchDeckModalOpen(true)}
-              disabled={isTyping}
+              onClick={handleOpenPitchDeck}
+              disabled={isTyping || isGeneratingProposal}
               className={`flex-1 py-2 text-sm uppercase font-display font-bold tracking-widest text-slate-900 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 rounded flex items-center justify-center space-x-2
-                  ${isTyping ? 'bg-slate-600' : 'bg-green-400 hover:bg-green-300 shadow-[0_0_15px_rgba(74,222,128,0.3)]'}
+                  ${(isTyping || isGeneratingProposal) ? 'bg-slate-600' : 'bg-green-400 hover:bg-green-300 shadow-[0_0_15px_rgba(74,222,128,0.3)]'}
               `}
             >
-              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>Pitch Deck</span>
+              {(isTyping || isGeneratingProposal) ? (
+                <span>Generating Deck...</span>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  <span>Pitch Deck</span>
+                </>
+              )}
             </button>
           </div>
 

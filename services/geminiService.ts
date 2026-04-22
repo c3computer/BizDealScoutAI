@@ -211,6 +211,21 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
     }
   }
 
+  // Skip Gemini File API for AMR files (not supported)
+  if (file.mimeType === 'audio/x-amr' || file.name.toLowerCase().endsWith('.amr')) {
+    console.log(`Skipping Gemini File API upload for AMR file: ${file.name}`);
+    
+    // Ensure base64 is clean
+    const cleanBase64 = fileData.includes(',') ? fileData.split(',')[1] : fileData;
+    
+    return {
+      inlineData: {
+        mimeType: 'audio/amr',
+        data: cleanBase64
+      }
+    };
+  }
+
   // Upload to server-side proxy which uses Gemini File API
   try {
     console.log(`Uploading ${file.name} to Gemini File API via proxy...`);
@@ -252,7 +267,9 @@ const processFileToPart = async (ai: GoogleGenAI, file: DealFile): Promise<any> 
     return {
       inlineData: {
         mimeType: file.mimeType,
-        data: fileData
+        data: {
+            data: fileData
+        }
       }
     };
   }
@@ -352,16 +369,21 @@ export const summarizeCall = async (
   `;
 
   try {
+    // Wrap the file part properly as 'inlineData' (or 'fileData' if previously uploaded)
     const filePart = await processFileToPart(ai, file);
     
+    // Ensure the part is correctly structured before passing
+    const parts: any[] = [];
+    if (filePart) parts.push(filePart);
+    parts.push({ text: prompt });
+
+    console.log("Gemini Parts being sent:", JSON.stringify(parts, (key, value) => 
+        key === 'data' ? (typeof value === 'string' && value.length > 50 ? value.substring(0, 50) + '...' : value) : value
+    , 2));
+
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-pro-preview',
-      contents: {
-        parts: [
-          filePart,
-          { text: prompt }
-        ]
-      }
+      contents: { parts }
     });
 
     return response.text || "No summary generated.";

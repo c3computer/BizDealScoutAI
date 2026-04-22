@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import JSZip from 'jszip';
 import { useAuth } from './contexts/AuthContext';
 import { extractDealMetrics, analyzeDeal, generateGrowthStrategy, queryDealChat, generateChatPresentation } from './services/geminiService';
 import { AuthModal } from './components/AuthModal';
@@ -124,6 +125,8 @@ const App: React.FC = () => {
   const [chatPresentationLoading, setChatPresentationLoading] = useState(false);
   const [chatPresentationModalOpen, setChatPresentationModalOpen] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [selectedAudioFileStr, setSelectedAudioFileStr] = useState<string>('');
+  const [audioFiles, setAudioFiles] = useState<DealFile[]>([]); // Track audio files for selection
   const [chatPresentationResult, setChatPresentationResult] = useState<AnalysisResult | null>(null);
   const [loiTerms, setLoiTerms] = useState<LOITerms | null>(null);
   const [isExtractingTerms, setIsExtractingTerms] = useState(false);
@@ -139,6 +142,11 @@ const App: React.FC = () => {
     }
   }, [chatMessages, chatLoading]);
 
+  // Update audio files list whenever deal.files changes
+  useEffect(() => {
+    setAudioFiles(deal.files.filter(f => f.mimeType.startsWith('audio/') || f.mimeType.startsWith('video/') || f.name.toLowerCase().endsWith('.amr')));
+  }, [deal.files]);
+  
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -516,10 +524,32 @@ const App: React.FC = () => {
   };
 
   const handleSummarizeCall = async () => {
-    const audioFile = deal.files.find(f => f.mimeType.startsWith('audio/') || f.mimeType.startsWith('video/') || f.name.endsWith('.amr'));
-    if (!audioFile) {
-      setError("No audio/video file found to summarize.");
-      return;
+    let filesToSummarize: DealFile[] = [];
+
+    if (audioFiles.length === 0) {
+        setError("No audio/video file found to summarize.");
+        return;
+    }
+
+    if (selectedAudioFileStr === 'ALL_FILES') {
+        filesToSummarize = [...audioFiles];
+    } else if (selectedAudioFileStr) {
+        const found = audioFiles.find(f => f.name === selectedAudioFileStr);
+        if (found) {
+            filesToSummarize = [found];
+        } else {
+             setError("Selected file not found.");
+             return;
+        }
+    } else {
+        // If nothing is selected explicitly but there's only 1 file, summarize it.
+        // If there are multiple, prompt them to use the dropdown.
+        if (audioFiles.length === 1) {
+             filesToSummarize = [audioFiles[0]];
+        } else {
+             setError("Multiple audio files detected. Please select an audio file (or 'All Files') from the dropdown below.");
+             return;
+        }
     }
 
     setSummarizingCall(true);
@@ -527,28 +557,59 @@ const App: React.FC = () => {
 
     try {
       const { summarizeCall } = await import('./services/geminiService');
-      const summary = await summarizeCall(audioFile, deal.callParticipants || '');
-      setDeal(prev => {
-        const updatedDeal = { ...prev, callSummary: summary };
-        
-        // Auto-save the summary to the cache if we have an active session
-        if (currentCacheId) {
-           dataService.saveToGlobalCache(
-             updatedDeal.listingUrl || 'manual-' + Date.now(),
-             updatedDeal,
-             result || { markdown: '', groundingUrls: [] },
-             metrics,
-             currentCacheId
-           );
-        }
-        
-        return updatedDeal;
-      });
+      
+      for (const file of filesToSummarize) {
+          const summary = await summarizeCall(file, deal.callParticipants || '');
+          setDeal(prev => {
+            // Appending to existing summary if it already exists, or creating new
+            const updatedSummary = prev.callSummary 
+                ? `${prev.callSummary}\n\n--- Summary: ${file.name} ---\n${summary}` 
+                : `--- Summary: ${file.name} ---\n${summary}`;
+                
+            const updatedDeal = { ...prev, callSummary: updatedSummary };
+            
+            // Auto-save the summary to the cache if we have an active session
+            if (currentCacheId) {
+               dataService.saveToGlobalCache(
+                 updatedDeal.listingUrl || 'manual-' + Date.now(),
+                 updatedDeal,
+                 result || { markdown: '', groundingUrls: [] },
+                 metrics,
+                 currentCacheId
+               );
+            }
+            
+            return updatedDeal;
+          });
+      }
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to summarize call.");
     } finally {
       setSummarizingCall(false);
+    }
+  };
+
+  const handleDownloadAudioZip = async () => {
+    try {
+      const zip = new JSZip();
+      audioFiles.forEach(file => {
+        let base64Data = file.data;
+        if (base64Data.includes(',')) {
+          base64Data = base64Data.split(',')[1];
+        }
+        zip.file(file.name, base64Data, { base64: true });
+      });
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'audio_files.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to create zip', err);
+      setError('Failed to create audio zip file.');
     }
   };
 
@@ -573,16 +634,23 @@ const App: React.FC = () => {
     
     if (effectiveCacheId) {
       try {
+        console.log("Saving user deal...");
         await dataService.saveUserDeal(user.id, effectiveCacheId, deal.notes, crm, deal, result || { markdown: '', groundingUrls: [] }, metrics);
+        console.log("User deal saved.");
         
         // Save extra data (files and chat messages) to Firestore
+        console.log("Saving extra data...");
         const updatedFiles = await dataService.saveDealExtraData(user.id, effectiveCacheId, deal.files, chatMessages);
+        console.log("Extra data saved.");
+        
         if (updatedFiles) {
           setDeal(prev => ({ ...prev, files: updatedFiles }));
         }
         
         // Trigger Cloud Sync
+        console.log("Syncing...");
         await syncData();
+        console.log("Sync complete.");
 
         setSaveSuccess(true);
       } catch (err) {
@@ -1136,15 +1204,45 @@ const App: React.FC = () => {
                         value={deal.callParticipants || ''}
                         onChange={(e) => setDeal({...deal, callParticipants: e.target.value})}
                       />
+                      
+                      {audioFiles.length > 1 && (
+                        <div className="mb-3">
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Select Audio File</label>
+                          <select
+                            className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400"
+                            value={selectedAudioFileStr}
+                            onChange={(e) => setSelectedAudioFileStr(e.target.value)}
+                          >
+                            <option value="">Select a file...</option>
+                            <option value="ALL_FILES">Summarize ALL Files</option>
+                            {audioFiles.map((file, idx) => (
+                              <option key={idx} value={file.name}>{file.name}{file.lastModified ? ` (${new Date(file.lastModified).toLocaleDateString()})` : ''}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      
                       <button
                         onClick={handleSummarizeCall}
-                        disabled={summarizingCall}
+                        disabled={summarizingCall || (!selectedAudioFileStr && audioFiles.length > 1)}
                         className={`w-full mt-3 py-2 text-xs uppercase font-bold tracking-widest text-slate-900 transition-all rounded
-                            ${summarizingCall ? 'bg-slate-600' : 'bg-cyan-500 hover:bg-cyan-400'}
+                            ${summarizingCall || (!selectedAudioFileStr && audioFiles.length > 1) ? 'bg-slate-600 cursor-not-allowed opacity-50' : 'bg-cyan-500 hover:bg-cyan-400'}
                         `}
                       >
                         {summarizingCall ? 'Summarizing Call...' : 'Generate Call Summary'}
                       </button>
+
+                      {selectedAudioFileStr === 'ALL_FILES' && audioFiles.length > 1 && (
+                         <button
+                            onClick={handleDownloadAudioZip}
+                            className="w-full mt-2 py-2 text-xs uppercase font-bold tracking-widest text-white border border-slate-600 hover:bg-slate-800 transition-all rounded transition flex items-center justify-center"
+                         >
+                            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download All Audio (ZIP)
+                         </button>
+                      )}
                       
                       {deal.callSummary && (
                         <div className="mt-3">

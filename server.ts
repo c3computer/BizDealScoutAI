@@ -18,7 +18,16 @@ const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path
 app.post("/api/gemini/upload", async (req, res) => {
   try {
     const { fileData, mimeType, displayName } = req.body;
-    if (!fileData || !mimeType) {
+    let actualMimeType = mimeType;
+    
+    // Fallback mime type if not provided or unusable
+    if (!actualMimeType || actualMimeType === 'application/octet-stream') {
+      if (displayName && displayName.toLowerCase().endsWith('.amr')) {
+        actualMimeType = 'audio/x-amr';
+      }
+    }
+    
+    if (!fileData || !actualMimeType) {
       return res.status(400).json({ error: "fileData and mimeType are required" });
     }
 
@@ -38,7 +47,14 @@ app.post("/api/gemini/upload", async (req, res) => {
     const tmpPath = path.resolve("/tmp", `upload-${Date.now()}`);
     fs.writeFileSync(tmpPath, buffer);
 
-    const uploadRes = await ai.files.upload({ file: tmpPath, mimeType, displayName });
+    console.log(`Debug: Received upload request. displayName: ${displayName}, mimeType: ${actualMimeType}`);
+    const uploadRes = await ai.files.upload({ 
+      file: tmpPath, 
+      config: { 
+        mimeType: actualMimeType, 
+        displayName 
+      } 
+    });
     
     // Clean up
     fs.unlinkSync(tmpPath);

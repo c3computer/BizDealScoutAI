@@ -76,13 +76,14 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ files, onFilesChange
             
             let mimeType = file.type;
             if (!mimeType && file.name.toLowerCase().endsWith('.amr')) {
-                mimeType = 'audio/amr';
+                mimeType = 'audio/x-amr';
             }
             
             newFiles.push({
                 name: file.name,
                 mimeType: mimeType || 'application/octet-stream',
-                data: data
+                data: data,
+                lastModified: file.lastModified
             });
         }
       }

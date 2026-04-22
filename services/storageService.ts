@@ -52,6 +52,7 @@ export const dataService = {
   // Extra Data (Files and Chat Messages) via Firestore
   saveDealExtraData: async (userId: string, dealId: string, files: DealFile[], chatMessages: ChatMessage[]) => {
     try {
+      console.log("Saving extra data - starting...");
       // 0. Get existing files to find deletions
       const dealRef = doc(db, `users/${userId}/deals/${dealId}`);
       const dealSnap = await getDoc(dealRef);
@@ -63,6 +64,7 @@ export const dataService = {
       );
 
       // Delete removed files from Storage
+      console.log(`Deleting ${filesToDelete.length} files...`);
       await Promise.all(filesToDelete.map(async (file) => {
         if (file.storagePath) {
           try {
@@ -75,6 +77,7 @@ export const dataService = {
       }));
 
       // 1. Upload files to Firebase Storage if they have base64 data
+      console.log("Uploading files...");
       const updatedFiles = await Promise.all(files.map(async (file) => {
         if (file.data && !file.downloadUrl) {
           const storagePath = `users/${userId}/deals/${dealId}/files/${file.name}`;
@@ -104,6 +107,7 @@ export const dataService = {
       }));
 
       // 2. Save chat messages to Firestore subcollection
+      console.log("Saving chat messages...");
       const chatsRef = collection(db, `users/${userId}/deals/${dealId}/chats`);
       
       // Delete existing chats to replace them (simple approach)
@@ -124,12 +128,14 @@ export const dataService = {
 
       // 3. Update deal with files metadata
       // Ensure we do not save bloated files (like base64 data or extracted text) into Firestore 1MB limits
+      console.log("Updating deal metadata...");
       const firestoreFiles = updatedFiles.map(f => {
         const { data, extractedText, ...rest } = f;
         return rest;
       });
       await setDoc(dealRef, { files: firestoreFiles }, { merge: true });
 
+      console.log("Extra data saved successfully.");
       return updatedFiles;
     } catch (e) {
       console.error("Failed to save extra data to Firestore/Storage", e);
