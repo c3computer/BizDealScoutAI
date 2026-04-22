@@ -43,8 +43,20 @@ const runWithRetry = async <T>(fn: () => Promise<T>, retries = 3): Promise<T> =>
   }
 };
 
+// Helper to get API Key
+const getApiKey = async () => {
+  if (typeof window !== 'undefined' && window.aistudio && window.aistudio.getSelectedApiKey) {
+    try {
+      return await window.aistudio.getSelectedApiKey();
+    } catch (e) {
+      console.error("Failed to get API key from window.aistudio", e);
+    }
+  }
+  return process.env.GEMINI_API_KEY || '';
+};
+
 export const extractDealMetrics = async (url: string): Promise<Partial<DealOpportunity>> => {
-  let apiKey = process.env.GEMINI_API_KEY || '';
+  let apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
   // --- ANTI-SCRAPING STRATEGY ---
   let listingId = '';
@@ -251,7 +263,7 @@ export const analyzeDeal = async (
   deal: DealOpportunity,
   metrics: { multiple: string; margin: string }
 ): Promise<AnalysisResult> => {
-  let apiKey = process.env.GEMINI_API_KEY || '';
+  let apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const parts: any[] = [];
 
@@ -323,7 +335,7 @@ export const summarizeCall = async (
   file: DealFile,
   participants: string
 ): Promise<string> => {
-  let apiKey = process.env.GEMINI_API_KEY || '';
+  let apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
@@ -362,7 +374,7 @@ export const generateGrowthStrategy = async (
     profile: InvestorProfile,
     deal: DealOpportunity
 ): Promise<AnalysisResult> => {
-    let apiKey = process.env.GEMINI_API_KEY || '';
+    let apiKey = await getApiKey();
     const ai = new GoogleGenAI({ apiKey });
     const prompt = `
       Create a Growth & Exit Strategy for this business.
@@ -405,7 +417,7 @@ export const queryCapitalRaisingChat = async (
   mainChatHistory?: ChatMessage[],
   loiTerms?: LOITerms | null
 ): Promise<string> => {
-  let apiKey = process.env.GEMINI_API_KEY || '';
+  let apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const parts: any[] = [];
 
@@ -485,7 +497,7 @@ export const queryDealChat = async (
     analysis: DealAnalysis | null
   }
 ): Promise<string> => {
-  let apiKey = process.env.GEMINI_API_KEY || '';
+  let apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const parts: any[] = [];
 
@@ -546,7 +558,7 @@ export const generateChatPresentation = async (
     analysis: AnalysisResult | null
   }
 ): Promise<string> => {
-  let apiKey = process.env.GEMINI_API_KEY || '';
+  let apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const parts: any[] = [];
 
@@ -603,7 +615,7 @@ export const generatePersonalizedPlaybook = async (
   profile: InvestorProfile,
   answers: Record<string, string>
 ): Promise<string> => {
-  let apiKey = process.env.GEMINI_API_KEY || '';
+  let apiKey = await getApiKey();
   if (!apiKey) throw new Error("Missing Gemini API Key");
 
   const ai = new GoogleGenAI({ apiKey });
@@ -664,7 +676,7 @@ export const generatePersonalizedPlaybook = async (
 };
 
 export const extractLOITerms = async (history: ChatMessage[]): Promise<any> => {
-  let apiKey = process.env.GEMINI_API_KEY || '';
+  let apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
