@@ -7,6 +7,7 @@
   "host_permissions": [
     "https://*.bizbuysell.com/*",
     "https://*.bizquest.com/*",
+    "https://*.flippa.com/*",
     "http://localhost:3000/*",
     "https://*.run.app/*",
     "https://dealscout.it.com/*"
@@ -25,7 +26,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*.bizbuysell.com/*", "https://*.bizquest.com/*"],
+      "matches": ["https://*.bizbuysell.com/*", "https://*.bizquest.com/*", "https://*.flippa.com/*"],
       "js": ["content.js"]
     }
   ]

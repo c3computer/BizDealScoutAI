@@ -1007,7 +1007,7 @@ const App: React.FC = () => {
                     Investor Profile
                     </h2>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 ml-4">
                         {/* Import JSON */}
                         <button 
                             onClick={() => profileInputRef.current?.click()}
@@ -1051,8 +1051,16 @@ const App: React.FC = () => {
                     </div>
                 </div>
 
+                <div className="flex justify-between items-center mb-1">
+                    <label className="text-slate-400 text-xs font-bold uppercase tracking-wider select-none">
+                      Your Name
+                    </label>
+                    <div className="bg-slate-700 px-3 py-1 rounded text-xs font-bold text-amber-400 border border-slate-600 uppercase tracking-wider">
+                       Profile: {profile.name || 'Default Profile'}
+                    </div>
+                </div>
+
                 <Input 
-                  label="Your Name" 
                   value={profile.name || ''} 
                   onChange={(e) => setProfile({...profile, name: e.target.value})}
                   placeholder="e.g. John Doe"
